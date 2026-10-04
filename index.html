@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Which Forecast? — An Interactive Guide to Choosing a Time Series Model</title>
+<style>
+:root{
+  --bg:#0e1017; --panel:#151824; --panel2:#1b1f2e; --bd:#262c3d; --bd2:#333b52;
+  --tx:#e7eaf3; --mut:#8e97ad; --dim:#5d6577;
+  --teal:#5eead4; --violet:#a78bfa; --amber:#fbbf24; --red:#f87171; --blue:#60a5fa; --green:#4ade80; --pink:#f472b6;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:78px}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+code,kbd,var{font-family:var(--mono)}
+a{color:var(--teal);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- nav ---------- */
+nav{position:sticky;top:0;z-index:50;background:rgba(14,16,23,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--bd)}
+nav .in{max-width:1180px;margin:0 auto;padding:11px 22px;display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
+nav .in::-webkit-scrollbar{display:none}
+nav .brand{font-weight:700;letter-spacing:-.2px;margin-right:14px;white-space:nowrap;font-size:15px}
+nav .brand span{color:var(--teal)}
+nav a.navlink{color:var(--mut);font-size:13px;padding:5px 10px;border-radius:7px;white-space:nowrap;transition:.15s}
+nav a.navlink:hover{color:var(--tx);background:var(--panel2);text-decoration:none}
+nav a.navlink.on{color:var(--teal);background:rgba(94,234,212,.1)}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+section{padding:72px 0;border-bottom:1px solid var(--bd)}
+section:last-of-type{border-bottom:none}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);margin-bottom:12px}
+h1{font-size:clamp(30px,5vw,50px);line-height:1.08;letter-spacing:-1.4px;margin:0 0 18px;font-weight:800}
+h2{font-size:clamp(23px,3.2vw,31px);line-height:1.18;letter-spacing:-.7px;margin:0 0 14px;font-weight:750}
+h3{font-size:17px;margin:0 0 8px;font-weight:650;letter-spacing:-.2px}
+h4{font-size:14px;margin:0 0 6px;font-weight:650;color:var(--tx)}
+p{margin:0 0 14px;color:#c6ccdb;max-width:76ch}
+.lead{font-size:18.5px;color:#d3d9e7;max-width:70ch}
+small,.sm{font-size:13px;color:var(--mut)}
+.mut{color:var(--mut)}
+.center{text-align:center}
+.mono{font-family:var(--mono)}
+
+/* ---------- cards ---------- */
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:13px;padding:20px}
+.card.pad{padding:22px 24px}
+.grid{display:grid;gap:15px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.fam{border-left:3px solid var(--bd2);transition:.15s}
+.fam:hover{border-left-color:var(--teal);background:var(--panel2)}
+.fam .tag{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
+
+/* ---------- playground ---------- */
+.play{background:var(--panel);border:1px solid var(--bd2);border-radius:16px;overflow:hidden}
+.play .head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;background:var(--panel2);border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.play .head b{font-size:14px}
+.playgrid{display:grid;grid-template-columns:305px 1fr}
+@media(max-width:1000px){.playgrid{grid-template-columns:1fr}}
+.knobs{padding:18px;border-right:1px solid var(--bd);background:#12151f}
+@media(max-width:1000px){.knobs{border-right:none;border-bottom:1px solid var(--bd)}}
+.knob{margin-bottom:13px}
+.knob label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-bottom:5px;font-family:var(--mono)}
+.knob label b{color:var(--teal);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--teal);height:16px;cursor:pointer}
+.seg{display:flex;gap:4px;background:#0c0e15;padding:3px;border-radius:8px;border:1px solid var(--bd)}
+.seg button{flex:1;background:none;border:none;color:var(--mut);font-size:11.5px;padding:5px 4px;border-radius:6px;cursor:pointer;font-family:var(--mono);transition:.12s}
+.seg button:hover{color:var(--tx)}
+.seg button.on{background:var(--teal);color:#06231f;font-weight:700}
+.seg button.on[data-v=amber]{background:var(--amber);color:#2a1c00}
+.seg button.on[data-v=violet]{background:var(--violet);color:#1a1030}
+.seg button.on[data-v=blue]{background:var(--blue);color:#08182e}
+.seg button.on[data-v=red]{background:var(--red);color:#2b0909}
+.stage{padding:18px;min-width:0}
+.chart{position:relative;background:#0a0c12;border:1px solid var(--bd);border-radius:10px;padding:10px 10px 4px;margin-bottom:14px}
+.chart .ttl{font-size:11.5px;font-family:var(--mono);color:var(--dim);padding:2px 4px 6px;letter-spacing:.06em;text-transform:uppercase;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.chart .ttl em{font-style:normal;color:var(--mut);text-transform:none;letter-spacing:0}
+.fzone{position:absolute;top:0;bottom:0;right:0;border-left:1px dashed var(--dim);background:rgba(148,163,184,.055);pointer-events:none}
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:7px 5px 3px;font-size:11.5px;color:var(--mut);font-family:var(--mono)}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.range{position:absolute;top:8px;right:14px;font-family:var(--mono);font-size:10.5px;color:var(--dim);background:rgba(0,0,0,.35);padding:1px 6px;border-radius:5px}
+.btn{background:var(--teal);color:#06231f;border:none;font-weight:700;font-size:13px;padding:9px 15px;border-radius:9px;cursor:pointer;font-family:var(--sans);transition:.15s}
+.btn:hover{filter:brightness(1.12)}
+.btn.ghost{background:none;border:1px solid var(--bd2);color:var(--mut);font-weight:600}
+.btn.ghost:hover{color:var(--tx);border-color:var(--teal);filter:none}
+.btn.sm{padding:6px 11px;font-size:12px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------- signals ---------- */
+.sig{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--bd)}
+.sig:last-child{border-bottom:none}
+.sig .v{font-family:var(--mono);font-size:19px;font-weight:700;min-width:78px;text-align:right;flex-shrink:0}
+.sig .d{font-size:13.5px;color:var(--mut);flex:1}
+.sig .d b{color:var(--tx);font-weight:600;display:block;margin-bottom:2px;font-size:14px}
+.meter{height:5px;background:#0c0e15;border-radius:3px;overflow:hidden;margin-top:7px;border:1px solid var(--bd)}
+.meter i{display:block;height:100%;border-radius:3px;transition:width .3s}
+.chip{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:6px;display:inline-block;border:1px solid var(--bd2);color:var(--mut)}
+.chip.t{color:var(--teal);border-color:rgba(94,234,212,.4);background:rgba(94,234,212,.08)}
+.chip.w{color:var(--amber);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.08)}
+.chip.b{color:var(--red);border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.08)}
+.chip.n{color:var(--dim)}
+
+/* ---------- recommendation ---------- */
+.rec{border:1px solid var(--bd2);border-radius:13px;padding:16px 18px;margin-bottom:11px;background:var(--panel)}
+.rec.top{border-color:rgba(94,234,212,.45);background:linear-gradient(180deg,rgba(94,234,212,.07),var(--panel) 55%)}
+.rec .hdr{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
+.rec .rank{font-family:var(--mono);font-size:11.5px;color:var(--dim);width:26px;flex-shrink:0}
+.rec.top .rank{color:var(--teal)}
+.rec h3{margin:0}
+.rec .score{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--mut)}
+.rec .score b{color:var(--teal)}
+.rec ul{margin:11px 0 0;padding-left:19px;font-size:13.5px;color:var(--mut)}
+.rec ul li{margin-bottom:4px}
+.rec ul li::marker{color:var(--dim)}
+.cfg{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:11px;padding:8px 11px;background:#0a0c12;border-radius:8px;border:1px solid var(--bd);overflow-x:auto}
+.blocked{opacity:.42}
+.blocked .hdr h3{text-decoration:line-through;text-decoration-color:var(--red)}
+.alert{border-left:3px solid var(--amber);background:rgba(251,191,36,.07);padding:13px 17px;border-radius:0 10px 10px 0;margin:12px 0}
+.alert.red{border-color:var(--red);background:rgba(248,113,113,.07)}
+.alert.teal{border-color:var(--teal);background:rgba(94,234,212,.06)}
+.alert b{color:var(--amber)}
+.alert.red b{color:var(--red)}
+.alert.teal b{color:var(--teal)}
+.alert p{margin:0 0 8px;font-size:14px}
+.alert p:last-child{margin:0}
+
+/* ---------- tables ---------- */
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--bd)}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:600}
+td.num,th.num{text-align:right;font-family:var(--mono)}
+tr.best td{background:rgba(94,234,212,.07);color:var(--teal);font-weight:600}
+tr.base td{color:var(--mut)}
+
+/* ---------- misc ---------- */
+.formula{font-family:var(--mono);font-size:13.5px;background:#0a0c12;border:1px solid var(--bd);border-left:2px solid var(--violet);padding:13px 16px;border-radius:0 9px 9px 0;margin:14px 0;color:#dfe4f0;overflow-x:auto;line-height:1.8}
+.formula i{color:var(--violet);font-style:italic}
+.scn{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--bd);border-radius:11px;background:var(--panel);cursor:pointer;transition:.15s;text-align:left;width:100%;color:inherit;font-family:inherit}
+.scn:hover{border-color:var(--teal);background:var(--panel2);transform:translateY(-1px)}
+.scn.on{border-color:var(--teal);background:rgba(94,234,212,.07)}
+.scn .ic{font-family:var(--mono);font-size:10.5px;color:var(--teal);background:rgba(94,234,212,.1);padding:3px 7px;border-radius:6px;flex-shrink:0;white-space:nowrap;margin-top:2px}
+.scn b{display:block;font-size:14px;margin-bottom:2px}
+.scn span{display:block;font-size:12.5px;color:var(--mut)}
+.q{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;background:var(--panel);margin-bottom:13px}
+.q .qtxt{font-size:15px;margin-bottom:11px}
+.q .ans{display:none;margin-top:13px;padding-top:13px;border-top:1px dashed var(--bd2);font-size:14px;color:var(--mut)}
+.q .ans.show{display:block}
+.q .ans b{color:var(--tx)}
+.faq{border-bottom:1px solid var(--bd)}
+.faq summary{cursor:pointer;padding:14px 0;font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--teal);font-family:var(--mono);font-size:19px;flex-shrink:0}
+.faq[open] summary::after{content:"\2212"}
+.faq .body{padding:0 0 15px;font-size:14px;color:var(--mut)}
+ul.tight{margin:0 0 14px;padding-left:20px;color:#c6ccdb}
+ul.tight li{margin-bottom:7px}
+ul.tight li::marker{color:var(--teal)}
+ul.tight b{color:var(--tx)}
+.hr{height:1px;background:var(--bd);margin:26px 0;border:none}
+.pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;padding:4px 10px;border-radius:20px;background:var(--panel2);border:1px solid var(--bd2);color:var(--mut)}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--teal)}
+.pill.w::before{background:var(--amber)}
+.pill.b::before{background:var(--red)}
+footer{padding:44px 0 60px;color:var(--dim);font-size:13.5px}
+.hint{font-size:12.5px;color:var(--dim);font-family:var(--mono);margin-top:8px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px;border:2px solid var(--bg)}
+</style>
+</head>
+<body>
+
+<nav><div class="in">
+  <div class="brand">Which <span>Forecast?</span></div>
+  <a class="navlink" href="#thesis">Thesis</a>
+  <a class="navlink" href="#lab">Lab</a>
+  <a class="navlink" href="#anatomy">Anatomy</a>
+  <a class="navlink" href="#signals">Signals</a>
+  <a class="navlink" href="#families">Families</a>
+  <a class="navlink" href="#engine">Recommender</a>
+  <a class="navlink" href="#backtest">Backtest</a>
+  <a class="navlink" href="#gotchas">Gotchas</a>
+  <a class="navlink" href="#quiz">Check yourself</a>
+  <a class="navlink" href="#next">Build it</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- ===================== HERO ===================== -->
+<section id="thesis" style="padding-top:60px">
+  <div class="eyebrow">Interactive primer · ~20 minutes</div>
+  <h1>There is no best time&nbsp;series model.<br>Only the right one for <em style="color:var(--teal);font-style:normal">this</em> series.</h1>
+  <p class="lead">Most forecasting courses teach you six algorithms. Almost none teach you <b>how to pick one</b> — and picking is the part that actually decides your project. This page teaches the decision procedure, with a live series generator wired into a real (if simplified) recommender.</p>
+
+  <div class="grid g3" style="margin-top:30px">
+    <div class="card">
+      <div class="tag" style="font-family:var(--mono);font-size:11px;color:var(--teal)">01</div>
+      <h3>The series decides</h3>
+      <p class="sm" style="margin:0">Trend, seasonality, its <i>period</i>, noise shape, sample length, horizon, and whether you have external drivers. These are measurable in seconds.</p>
+    </div>
+    <div class="card">
+      <div class="tag" style="font-family:var(--mono);font-size:11px;color:var(--violet)">02</div>
+      <h3>The rules are a shortlist</h3>
+      <p class="sm" style="margin:0">Diagnostics narrow a dozen families down to two or three. They cannot tell you which of the last two wins — the data has to answer that.</p>
+    </div>
+    <div class="card">
+      <div class="tag" style="font-family:var(--mono);font-size:11px;color:var(--amber)">03</div>
+      <h3>The backtest is the verdict</h3>
+      <p class="sm" style="margin:0">Rolling-origin evaluation on your actual data is the only unbiased signal. Everything before it is a hypothesis about where to look.</p>
+    </div>
+  </div>
+
+  <div class="alert teal" style="margin-top:26px">
+    <p><b>How to use this page.</b> Everything is live. The panel in <a href="#lab">Lab</a> generates a synthetic series from knobs; every chart, every number, and the recommendation below are computed from that series in your browser — nothing is hardcoded. Change a knob and watch the advice change. That <em>is</em> the concept.</p>
+  </div>
+</section>
+
+<!-- ===================== LAB ===================== -->
+<section id="lab">
+  <div class="eyebrow">Step 1 · Build a series</div>
+  <h2>Start with the series, not the model</h2>
+  <p>The single most useful habit: before naming any algorithm, describe the series in structural words. <i>"Level with a rising trend and a stable 12-cycle, whose swings widen as the level rises."</i> That sentence already implies two algorithm choices before you write a line of code.</p>
+  <p>Load a scenario, or move the knobs. Every downstream section reads whatever is set right now.</p>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(275px,1fr));margin:24px 0 18px" id="scenarios"></div>
+
+  <div class="play">
+    <div class="head">
+      <b>Series generator</b>
+      <div class="btnrow">
+        <span class="pill" id="pillVerdict">diagnosing…</span>
+        <button class="btn ghost sm" id="btnShuffle">Resample noise</button>
+        <button class="btn sm" id="btnRand">Randomise all</button>
+      </div>
+    </div>
+    <div class="playgrid">
+      <div class="knobs" id="knobs"></div>
+      <div class="stage">
+        <div class="chart" id="chMain"></div>
+        <div class="legend">
+          <span><i style="background:#60a5fa"></i>observed y(t)</span>
+          <span id="legExog" style="display:none"><i style="background:#f472b6"></i>exogenous driver x(t)</span>
+          <span><i style="background:var(--dim)"></i>forecast horizon (unobserved)</span>
+        </div>
+        <div class="chart" id="chExog" style="margin:14px 0 0;display:none"></div>
+        <div class="grid g2" style="margin-top:14px">
+          <div class="chart" id="chZoom" style="margin:0"></div>
+          <div class="chart" id="chAcf" style="margin:0"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hint">The ACF panel shows autocorrelation out to 2 seasonal cycles. Long-lag positive bars = persistent dynamics (ARIMA territory). Spikes exactly at m = seasonality.</div>
+</section>
+
+<!-- ===================== ANATOMY ===================== -->
+<section id="anatomy">
+  <div class="eyebrow">Step 2 · Structure</div>
+  <h2>Every series is four things stacked</h2>
+  <p>Classical decomposition splits a series into <b>level + trend + seasonality + noise</b>. Nearly every family in the toolbox is a different way of writing those same four terms, which is why they compete with each other.</p>
+  <div class="formula">
+    y<sub>t</sub> = <i>L</i><sub>t</sub> + <i>B</i><sub>t</sub> + <i>S</i><sub>t</sub> + <i>e</i><sub>t</sub> &nbsp;&nbsp;·&nbsp;&nbsp; additive: &nbsp; <i>L</i><sub>t</sub> · (1 + <i>S</i><sub>t</sub>) · (1 + <i>e</i><sub>t</sub>) = multiplicative
+  </div>
+  <p>Read the four panels for your current series. The question to answer is not <i>"how good is the fit"</i> — it is <i>"which components exist, and at what period?"</i></p>
+  <div class="grid g2" id="decomp"></div>
+
+  <div class="grid g2" style="margin-top:22px">
+    <div class="card">
+      <h3>Additive vs. multiplicative — how to tell</h3>
+      <p class="sm">Look at whether the <b>amplitude of the swings grows with the level</b>. If July is +500 when you're at 1,000 and +5,000 when you're at 10,000, that's multiplicative: use <code>seasonal='mul'</code>, or take logs and model additively. If the swing is roughly +500 either way, additive is right.</p>
+      <p class="sm" style="margin:0">This is exactly why the AirPassengers series uses <code>trend='add', seasonal='mul'</code>: growth is linear, but seasonal amplitude is proportional.</p>
+    </div>
+    <div class="card">
+      <h3>Two seasonalities? Don't average them away.</h3>
+      <p class="sm">A daily-energy series has a <b>daily</b> cycle (m=24) and a <b>weekly</b> cycle (m=168). A retail series has weekly and yearly. Plain Holt-Winters assumes one period and will underfit or, worse, blur them.</p>
+      <p class="sm" style="margin:0">When two periods are real, the answer is <b>decomposition</b>: strip one, model the other, add back — or fit a Fourier-term model that can hold both at once.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SIGNALS ===================== -->
+<section id="signals">
+  <div class="eyebrow">Step 3 · Diagnostics</div>
+  <h2>The six numbers that pick the family</h2>
+  <p>All of these are computed live on the series in the <a href="#lab">Lab</a>. Learn to read the value, not just the verdict.</p>
+  <div class="grid g2">
+    <div class="card" id="sigCard"></div>
+    <div class="card">
+      <h3>Stationarity, informally</h3>
+      <p class="sm">A stationary series has a stable mean and stable variance over time — its plot looks like noise around a fixed line. Most classical models assume (or achieve via differencing) stationarity.</p>
+      <p class="sm"><b>The quick visual test:</b> does the centre drift? Do the swings widen? If yes, you need differencing (ARIMA) or explicit trend/seasonal terms (ETS) before residuals mean anything.</p>
+      <div class="formula" style="font-size:12.5px">
+        ADF: &nbsp;Δy<sub>t</sub> = γ + Σ a<sub>i</sub>y<sub>t−i</sub> + Σ b<sub>j</sub>Δy<sub>t−j</sub> + ε<br>
+        <span style="color:var(--mut)">H₀: γ = 0 (unit root — non-stationary). Reject when t &gt; −2.86.</span>
+      </div>
+      <p class="sm" style="margin:0"><b>Interpretation pressure:</b> "non-stationary" is not a verdict against a model. It's an instruction — it means your series needs differencing first, which is precisely what ARIMA's <code>d</code> does.</p>
+    </div>
+  </div>
+  <div class="alert" style="margin-top:16px">
+    <p><b>Diagnostics narrow the field; they do not rank within it.</b> Two families can satisfy every signal equally well. That's not a failure of the diagnostics — it's the definition of a shortlist.</p>
+  </div>
+</section>
+
+<!-- ===================== FAMILIES ===================== -->
+<section id="families">
+  <div class="eyebrow">Step 4 · The candidates</div>
+  <h2>Ten families, and the job each one does</h2>
+  <p>Read the "fails when" column as seriously as the "use when" column. Choosing a model by its strengths alone is how you end up debugging Prophet on a random walk.</p>
+  <div class="grid g2" id="fams"></div>
+
+  <hr class="hr">
+  <h3>Where the overlap actually is</h3>
+  <p>This is the part that surprises people. On a clean seasonal series with a few hundred points, <b>ETS, SARIMA and Prophet frequently land within a couple of percent of each other.</b> The choice is then decided by things diagnostics can't see:</p>
+  <ul class="tight">
+    <li><b>Interpretability</b> — a level/trend/seasonal breakdown you can explain to an operator beats a black box.</li>
+    <li><b>Uncertainty</b> — do you need calibrated prediction intervals, or just a point forecast?</li>
+    <li><b>Maintenance</b> — changepoints and holidays that need handling every quarter?</li>
+    <li><b>Latency and cost</b> — refitting a big model nightly on 500 series is a different problem from fitting once.</li>
+    <li><b>Panel scale</b> — one shared model across many related series is a completely different recommendation from one model per series.</li>
+  </ul>
+  <p>Diagnostics tell you the <i>shape</i> of the answer. These constraints tell you which of the finalists you can live with.</p>
+</section>
+
+<!-- ===================== ENGINE ===================== -->
+<section id="engine">
+  <div class="eyebrow">Step 5 · The recommender</div>
+  <h2>Diagnostics → ranked shortlist, with reasons</h2>
+  <p>This is the actual rule engine, running on your current series. Each candidate is scored by weighted rules; every score contribution is attached to a human-readable reason. <b>The reasons matter more than the ordering</b> — a recommendation you can't justify is one you'll ignore when it matters.</p>
+  <div class="btnrow" style="margin-bottom:16px">
+    <button class="btn ghost sm" id="btnRecompute">Recompute</button>
+    <span class="sm mut">Scoring is illustrative, not tuned. Real weights come from backtesting across many of your own series.</span>
+  </div>
+  <div id="alerts"></div>
+  <div id="recs"></div>
+</section>
+
+<!-- ===================== BACKTEST ===================== -->
+<section id="backtest">
+  <div class="eyebrow">Step 6 · The verdict</div>
+  <h2>Rolling-origin backtesting</h2>
+  <p>All the rules above produced hypotheses. Now we test them on this series using <b>rolling-origin evaluation</b>: train on the past, predict a fixed window ahead, slide forward, repeat. Every error below is out-of-sample and from a forecast the model could genuinely have made at the time.</p>
+  <div class="alert red" style="margin-bottom:18px">
+    <p><b>The single most common evaluation mistake:</b> holding out one final block and splitting once. That's a single sample of model performance — the difference between two models on one split is mostly luck. Two models that differ by 3% on one holdout are tied.</p>
+  </div>
+  <div class="grid g2">
+    <div class="card" style="grid-column:1/-1">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+        <h3 style="margin:0">Results on the current series</h3>
+        <div class="btnrow">
+          <span class="sm mut">origins:</span>
+          <div class="seg" id="segOrigins" style="width:150px">
+            <button data-v="3">3</button><button data-v="5" class="on">5</button><button data-v="8">8</button>
+          </div>
+          <span class="sm mut">window h:</span>
+          <div class="seg" id="segH" style="width:150px"><button data-v="0" class="on">auto</button><button data-v="24">24</button><button data-v="60">60</button></div>
+        </div>
+      </div>
+      <div class="chart" id="chBt" style="margin:10px 0 0"></div>
+      <div class="legend"><span><i style="background:#60a5fa"></i>observed</span><span><i style="background:var(--amber)"></i>best model forecast</span><span><i style="background:rgba(251,191,36,.25)"></i>illustrative 95% band</span><span><i style="background:var(--dim)"></i>forecast region</span></div>
+    </div>
+    <div class="card" style="grid-column:1/-1">
+      <div id="btTable"></div>
+      <div class="hint" id="btNote"></div>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:20px">
+    <div class="card">
+      <h3>Choosing a metric without fooling yourself</h3>
+      <ul class="tight">
+        <li><b>MAE</b> — error in your units. The safest default. Robust to outliers.</li>
+        <li><b>RMSE</b> — punishes large misses harder. Use when big misses are genuinely worse (capacity, safety).</li>
+        <li><b>MAPE / sMAPE</b> — <b style="color:var(--amber)">dangerous.</b> Blows up when the actual value is near zero, and it's meaningless when the denominator is a price or a level you don't control. Intermittent demand breaks it outright.</li>
+        <li><b>MASE</b> — scales error by the in-sample naive forecast. Best default when comparing across series with different scales.</li>
+      </ul>
+      <p class="sm" style="margin:0">Whatever you pick, <b>compare against the naive forecast</b>. A model that can't beat "tomorrow = today" doesn't deserve deployment, no matter how elegant it is.</p>
+    </div>
+    <div class="card">
+      <h3>Horizon changes everything</h3>
+      <p class="sm">The best model at h=1 and the best model at h=90 are frequently different families. A short horizon is dominated by recent noise (ETS/AR shine). A long horizon is dominated by trend and seasonality and by whether your exogenous drivers are even knowable that far ahead.</p>
+      <div class="formula" style="font-size:12.5px">
+        cycles needed for seasonal terms<br>
+        <span style="color:var(--amber)">n / m &lt; 2</span> → seasonal parameter <i>unidentifiable</i><br>
+        <span style="color:var(--amber)">n / m &lt; 4</span> → seasonal parameter <i>unstable</i>
+      </div>
+      <p class="sm" style="margin:0">This ratio is the most useful single feasibility check in the whole framework, and it's the one most often skipped.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== GOTCHAS ===================== -->
+<section id="gotchas">
+  <div class="eyebrow">Step 7 · Traps</div>
+  <h2>Failure modes you will meet in week one</h2>
+  <p>Each of these is a real problem, not a hypothetical. The first four are drawn from the classic lab sequence this guide was written alongside.</p>
+
+  <details class="faq card" style="margin-bottom:12px"><summary>Exogenous variables you don't have at forecast time</summary>
+    <div class="body">
+      <p style="margin:0 0 10px">Using <b>actual</b> future values of a driver during evaluation is oracle leakage. It answers "what if I knew tomorrow's weather perfectly?" — which is not a forecast, it's a measurement. The model will look excellent and then fail in production on the first week you have to guess.</p>
+      <p style="margin:0 0 10px"><b>Fix:</b> forecast the driver first, use <i>that</i> forecast as input, and accept the error — or restrict the horizon to where a genuine driver forecast exists (weather is credible at days, not months). If a driver has no forecastable future, it isn't a driver; it's leakage. Also check: drivers must be known for the <b>test</b> period, and correlations with the target that appear only late in the sample are usually leakage rather than signal.</p>
+      <span class="chip b">leakage</span> <span class="chip w">silent</span>
+    </div>
+  </details>
+
+  <details class="faq card" style="margin-bottom:12px"><summary>More seasonal cycles than the data supports</summary>
+    <div class="body">
+      <p style="margin:0 0 10px">Fitting a seasonal model on sub-daily data is the classic version. A 10-minute series with <code>seasonal_periods=144</code> and 2,000 rows gives you <b>14 cycles</b> — barely above the identifiability floor, and expensive: a seasonal ARIMA like <code>(1,0,1,144)</code> can take minutes to converge and still be unstable.</p>
+      <p style="margin:0 0 10px"><b>Fix:</b> resample first. Aggregate 10-minute to hourly (m=24, plenty of cycles) or to daily, and model at that grain. If sub-daily resolution is genuinely required for the decision, build a hierarchical model: daily base + intra-day profile — not one flat seasonal term.</p>
+      <span class="chip b">n/m &lt; 4</span>
+    </div>
+  </details>
+
+  <details class="faq card" style="margin-bottom:12px"><summary>Yearly seasonality requested on less than two years of data</summary>
+    <div class="body">
+      <p style="margin:0 0 10px">You cannot learn an annual cycle from a single year. A tool will happily accept <code>yearly_seasonality=True</code> on 12 months of data, fit something, and report a number — the parameter is unidentified and the "seasonality" it learned is really just the trend absorbed and re-emitted.</p>
+      <p style="margin:0 0 10px"><b>Fix:</b> assert it in code — refuse seasonal periods where <code>n/m &lt; 2</code> before you ever call <code>fit()</code>. This is a one-line guard that prevents a wrong answer delivered confidently.</p>
+      <span class="chip b">confident nonsense</span>
+    </div>
+  </details>
+
+  <details class="faq card" style="margin-bottom:12px"><summary>Treating a near-random walk as a trend</summary>
+    <div class="body">
+      <p style="margin:0 0 10px">Prices, exchange rates and many sensor streams have no exploitable structure: the best forecast is today's value. Fitting a rich model to them doesn't add information, it adds variance — and the fitted "trend" is noise that will confidently extrapolate.</p>
+      <p style="margin:0 0 10px"><b>Fix:</b> check the differenced ACF. If it's a spike at lag 1 and nothing else, the series is a random walk: forecast with the naive method, report wide intervals, and say so in the writeup. Choosing naive is a finding, not a cop-out.</p>
+      <span class="chip w">variance without skill</span>
+    </div>
+  </details>
+
+  <details class="faq card" style="margin-bottom:12px"><summary>Seasonal differencing you didn't need</summary>
+    <div class="body">
+      <p style="margin:0 0 10px">If the seasonal AR terms already model the cycle, adding <code>D=1</code> in the seasonal block over-differences, inflates the order, and can push the model past the edge of estimation. Seasonally-differencing a stationary-seasonal series is the classic case.</p>
+      <p style="margin:0 0 10px"><b>Fix:</b> let an automated order search explore it rather than hardcoding <code>(1,1,1)(1,1,1,m)</code> everywhere — and always check whether the extra differencing improved out-of-sample error, not just AIC.</p>
+      <span class="chip n">over-parameterised</span>
+    </div>
+  </details>
+
+  <details class="faq card" style="margin-bottom:12px"><summary>MAPE as the headline metric</summary>
+    <div class="body">
+      <p style="margin:0 0 10px">MAPE divides by the actual value. When actual values can approach zero — intermittent demand, low-volume SKUs, or any series where the denominator is a price — the metric explodes and ranks models by noise. It also asymmetrically punishes over-forecasts.</p>
+      <p style="margin:0 0 10px"><b>Fix:</b> MAE or MASE as primary, MAPE as a secondary sanity check on series where the denominator is well away from zero.</p>
+      <span class="chip w">misleading</span>
+    </div>
+  </details>
+
+  <details class="faq card"><summary>Fitting on the test set by accident</summary>
+    <div class="body">
+      <p style="margin:0 0 10px">Imputing, normalising, or decomposing the whole series before splitting puts test-set information into the transform. With <code>ffill()</code> across a gap spanning the split boundary, your training labels absorb test-period values.</p>
+      <p style="margin:0 0 10px"><b>Fix:</b> fit every transform on training data only — imputation, scaling, decomposition, feature construction — then <code>transform</code> the test set. And fill forward, never backward, across the boundary.</p>
+      <span class="chip b">silent</span>
+    </div>
+  </details>
+</section>
+
+<!-- ===================== QUIZ ===================== -->
+<section id="quiz">
+  <div class="eyebrow">Step 8 · Check yourself</div>
+  <h2>Four cases</h2>
+  <p>Commit to an answer before revealing it. Then load the case into the Lab to see the machinery run.</p>
+  <div id="quizBox"></div>
+</section>
+
+<!-- ===================== NEXT ===================== -->
+<section id="next">
+  <div class="eyebrow">Step 9 · Build it</div>
+  <h2>From this page to the starter kit</h2>
+  <p>This document is a working prototype of the recommender you described: <b>profile → rules → shortlist → backtest</b>, with the "backtest" stage honestly flagged as the only one that settles ties. Porting it to Python is mostly translation, because every concept is already fixed.</p>
+
+  <div class="grid g2" style="margin-top:8px">
+    <div class="card">
+      <h3>What maps to what</h3>
+      <div class="formula" style="font-size:12.5px;line-height:2">
+        diagnose()&nbsp;&nbsp;&nbsp;&nbsp;→ SeriesProfile dataclass<br>
+        seasonality search&nbsp;→ <i>Hyndman rs_ratio</i> / STL<br>
+        ADF / KPSS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ statsmodels.tsa.stattools<br>
+        matrix solve&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ numpy.linalg / scipy<br>
+        walkForward()&nbsp;&nbsp;&nbsp;&nbsp;→ backtesting + a candidate<br>
+        &nbsp;&nbsp;registry per model<br>
+        rule table&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ declarative rule objects<br>
+        recommend()&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ ranked shortlist + reasons
+      </div>
+    </div>
+    <div class="card">
+      <h3>The three decisions worth getting right</h3>
+      <ul class="tight">
+        <li><b>Hard refusals vs. soft warnings.</b> If <code>n/m &lt; 2</code>, refuse the seasonal model outright and say why. A model ranked last but still listed will get used at 2am.</li>
+        <li><b>Reasons are the API.</b> Return <code>Recommendation(model, score, reasons, config)</code> — not a bare string. The reasons are what make the tool trustworthy and reviewable.</li>
+        <li><b>Keep the backtest pluggable.</b> The shortlist comes from rules; the verdict comes from your own series. Where those two disagree, the backtest wins — and that disagreement is the most informative thing the tool will ever tell you.</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="hr">
+  <h3>A compact decision table to carry away</h3>
+  <table>
+    <thead><tr><th>If the series has…</th><th>Start with</th><th>Also consider</th><th>Kill it if…</th></tr></thead>
+    <tbody>
+      <tr><td>No trend, no season, stationary</td><td>Simple exponential smoothing</td><td>ARIMA(0,0,0), naive</td><td>n &lt; 30</td></tr>
+      <tr><td>Trend, no seasonality</td><td>Holt, damped if it bends</td><td>ARIMA + drift, log-linear</td><td>trend is noise (F<sub>T</sub> &lt; 0.2)</td></tr>
+      <tr><td>One seasonality, stable amplitude</td><td>Holt-Winters, seasonal naive</td><td>SARIMA, Prophet</td><td>n/m &lt; 2</td></tr>
+      <tr><td>One seasonality, amplitude ∝ level</td><td>Holt-Winters <code>'mul'</code></td><td>log-transform then additive</td><td>amplitude drift is illusory</td></tr>
+      <tr><td>Two or more seasonalities</td><td>MSTL / TBATS, Fourier terms</td><td>hierarchical: base + profile</td><td>n/m for the <i>longest</i> period &lt; 2</td></tr>
+      <tr><td>Strong external drivers, knowable ahead</td><td>SARIMAX + exog / dynamic regression</td><td>Prophet + regressors, GBM</td><td>drivers not forecastable to h</td></tr>
+      <tr><td>Many drivers, nonlinear effects</td><td>Gradient boosting, direct multi-horizon</td><td>global model across series</td><td>fewer than ~300 rows</td></tr>
+      <tr><td>Intermittent (many zeros)</td><td>Croston / TSB</td><td>classification + count split</td><td>zeros are true, not stockouts</td></tr>
+      <tr><td>Regime shifts, holidays, promotions</td><td>Prophet, segmented ETS</td><td>intervention variables in SARIMAX</td><td>changes are unexplainable noise</td></tr>
+      <tr><td>Near-random walk</td><td>Naive / ARIMA(0,1,0)</td><td>— and say so</td><td>differenced ACF has real structure</td></tr>
+    </tbody>
+  </table>
+
+  <div class="alert teal">
+    <p><b>The one-sentence version.</b> Measure the structure, use it to shortlist two or three families with written justification, then let rolling-origin error pick the winner — and keep the naive forecast in the comparison the whole way, because beating "tomorrow equals today" is the only bar that matters.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap" style="padding:0">
+    All charts and statistics on this page are computed in your browser from a seeded synthetic generator — no data leaves the page, no network requests, no libraries. The recommender and backtester are simplified teaching implementations, not production model code.
+  </div>
+</footer>
+
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   0 · DETERMINISTIC RNG + MATH HELPERS
+   ========================================================================= */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(rnd){let u=0,v=0;while(u===0)u=rnd();while(v===0)v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function clamp(v,a,b){return v<a?a:v>b?b:v}
+function mean(a){let s=0;for(const v of a)s+=v;return a.length?s/a.length:0}
+function varr(a){if(a.length<2)return 0;const m=mean(a);let s=0;for(const v of a)s+=(v-m)*(v-m);return s/(a.length-1)}
+function sd(a){return Math.sqrt(varr(a))}
+function med(a){const b=a.slice().sort((x,y)=>x-y);const h=b.length>>1;return b.length%2?b[h]:(b[h-1]+b[h])/2}
+function corr(a,b){const ma=mean(a),mb=mean(b);let n=0,da=0,db=0;for(let i=0;i<a.length;i++){const x=a[i]-ma,y=b[i]-mb;n+=x*y;da+=x*x;db+=y*y}return (da&&db)?n/Math.sqrt(da*db):0}
+function add(a,b){return a.map((v,i)=>v+b[i])}
+function diff(a,d){let o=a.slice();for(let k=0;k<(d||1);k++){const t=[];for(let i=1;i<o.length;i++)t.push(o[i]-o[i-1]);o=t}return o}
+function fillNulls(a){const o=a.slice();const idx=[];for(let i=0;i<o.length;i++)if(o[i]!=null&&isFinite(o[i]))idx.push(i);if(!idx.length)return o.map(()=>0);
+  for(let i=0;i<o.length;i++){if(o[i]==null||!isFinite(o[i])){let lo=idx[0],hi=idx[idx.length-1];
+    for(const j of idx){if(j<i)lo=j;else{hi=j;break}}
+    const t=(i-lo)/Math.max(1,(hi-lo));o[i]=o[lo]+t*(o[hi]-o[lo])}}
+  return o}
+
+/* small dense linear solver + inverse via Gauss-Jordan with partial pivoting */
+function matInv(A){
+  const n=A.length,W=2*n;
+  let mx=0;for(let i=0;i<n;i++)for(let j=0;j<n;j++){const v=Math.abs(A[i][j]);if(v>mx)mx=v}
+  const tol=Math.max(1e-13,mx*1e-10);   // relative: a pivot this small means collinear columns
+  const M=A.map((r,i)=>r.concat([...Array(n)].map((_,j)=>(i===j?1:0))));
+  for(let i=0;i<n;i++){
+    let p=i;
+    for(let r=i+1;r<n;r++)if(Math.abs(M[r][i])>Math.abs(M[p][i]))p=r;
+    [M[i],M[p]]=[M[p],M[i]];
+    if(Math.abs(M[i][i])<tol)return null;
+    const pv=M[i][i];
+    for(let c=0;c<W;c++)M[i][c]/=pv;
+    for(let r=0;r<n;r++){if(r===i)continue;const f=M[r][i];if(!f)continue;for(let c=0;c<W;c++)M[r][c]-=f*M[i][c]}
+  }
+  return M.map(r=>r.slice(n))   // after Gauss-Jordan the inverse sits in the RIGHT block
+}
+function ols(X,y){ // X: array of rows (no intercept column required)
+  const p=X[0].length;
+  const XtX=Array.from({length:p},()=>new Array(p).fill(0));const Xty=new Array(p).fill(0);
+  for(let r=0;r<X.length;r++)for(let a=0;a<p;a++){Xty[a]+=X[r][a]*y[r];for(let b=a;b<p;b++)XtX[a][b]+=X[r][a]*X[r][b]}
+  for(let a=0;a<p;a++)for(let b=0;b<a;b++)XtX[a][b]=XtX[b][a];
+  // Solve in a column-scaled basis: Xs = X/sc. Then Xs'Xs = XtX/(sc sc') and Xs'y = Xty/sc.
+  // This keeps the normal equations well conditioned (levels vs. differences can differ by 1e6).
+  const sc=[];for(let a=0;a<p;a++)sc.push(Math.sqrt(XtX[a][a])||1);
+  const S=XtX.map((row,a)=>row.map((v,b)=>v/(sc[a]*sc[b])));
+  const b_scaled=Xty.map((v,a)=>v/sc[a]);
+  const inv=matInv(S);if(!inv)return null;
+  const coef=inv.map(row=>row.reduce((s,v,k)=>s+v*b_scaled[k],0)).map((c,a)=>c/sc[a]);
+  if(coef.some(v=>!isFinite(v)))return null;
+  let sse=0;for(let r=0;r<X.length;r++){let f=0;for(let a=0;a<p;a++)f+=coef[a]*X[r][a];sse+=(f-y[r])*(f-y[r])}
+  return {coef,sse,inv,Xty}}
+
+/* =========================================================================
+   1 · TIME SERIES STATISTICS  (the "diagnostics")
+   ========================================================================= */
+function acf(y,maxLag){
+  const m=mean(y),n=y.length;let den=0;for(const v of y)den+=(v-m)*(v-m);den=den||1e-12;
+  const out=[];const L=Math.min(maxLag,n-3);
+  for(let k=0;k<=L;k++){let num=0;for(let t=0;t<n-k;t++)num+=(y[t]-m)*(y[t+k]-m);out.push(num/den)}
+  return out;
+}
+function oddWindow(w){w=Math.max(3,Math.round(w));return w%2===0?w+1:w}
+function maTrend(y,w){
+  const n=y.length,out=new Array(n).fill(null),h=w>>1;
+  if(w>=n-1)return new Array(n).fill(mean(y));
+  for(let i=h;i<n-h;i++){let s=0;for(let j=-h;j<=h;j++)s+=y[i+j];out[i]=s/w}
+  return fillNulls(out);
+}
+/* Classical decomposition. The trend smoother is a moving average of width m, which is the
+   only width that removes the seasonal cycle without absorbing it. A linear trend cannot do
+   this: on a curved series it leaves the curvature in the residual and swamps seasonality. */
+function classicalDecomp(y,m){
+  const n=y.length;
+  const T=maTrend(y,oddWindow(m));
+  const d=y.map((v,t)=>v-T[t]);
+  const seas=new Array(m).fill(0),cnt=new Array(m).fill(0);
+  for(let t=0;t<n;t++){seas[t%m]+=d[t];cnt[t%m]++}
+  for(let k=0;k<m;k++)seas[k]/=Math.max(1,cnt[k]);
+  const cs=mean(seas);
+  for(let k=0;k<m;k++)seas[k]-=cs;
+  const seasonal=d.map((_,t)=>seas[t%m]);
+  const residual=d.map((v,t)=>v-seas[t%m]);
+  return {trend:T,detrended:d,seasonal,residual,window:oddWindow(m)};
+}
+function seasonalStrength(y,m){
+  if(m<2||y.length<3*m)return 0;
+  const dec=classicalDecomp(y,m);
+  const vD=varr(dec.detrended);
+  return vD>1e-12?clamp(1-varr(dec.residual)/vD,0,1):0;
+}
+function mulSeasonalStrength(y,m){
+  if(m<2||y.length<3*m)return 0;
+  const T=maTrend(y,oddWindow(m));
+  const r=y.map((v,t)=>v/Math.max(1e-9,T[t]));
+  return seasonalStrength(r,m);
+}
+/* Trend strength via a wide, period-independent smoother: the share of variance the
+   slow trend explains. Depends on n, not on m, so it is comparable across series. */
+function trendStrength(y){
+  const W=oddWindow(Math.max(3,y.length/4));
+  if(W>=y.length-2)return 0;
+  const T=maTrend(y,W);
+  const R=y.map((v,t)=>v-T[t]);
+  const vY=varr(y);
+  return vY>1e-12?clamp(1-varr(R)/vY,0,1):0;
+}
+function nwVar(a,b){ // Newey-West-ish robust variance (lag = 4(n/100)^(2/9))
+  const n=a.length,m=mean(a);let g=0;for(const v of a)g+=(v-m)*(v-m);g/=n;
+  const L=Math.max(1,Math.floor(4*Math.pow(n/100,2/9)));
+  let s=0;for(let t=0;t<n;t++)s+=a[t]*a[t];s/=n;
+  for(let l=1;l<=L;l++){let c=0;for(let t=l;t<n;t++)c+=a[t]*a[t-l];c/=n;s+=(1-l/(L+1))*2*c}
+  return Math.max(1e-12,s)}
+/* difference aligned to the original index: dy[t] = y[t] - y[t-1], dy[0] unused.
+   diff() shortens the series, which silently yields undefined at the last index. */
+function diffAligned(y){const o=new Array(y.length).fill(0);for(let t=1;t<y.length;t++)o[t]=y[t]-y[t-1];return o}
+function adfOnce(y,L){
+  const n=y.length;
+  if(n<26)return null;
+  const dy=diffAligned(y),X=[],Y=[];
+  for(let t=L+1;t<n;t++){
+    // includes a linear trend term: without it ADF over-rejects on trending series
+    const row=[1,t/n];
+    for(let i=1;i<=L;i++)row.push(y[t-i]);
+    for(let j=1;j<=L;j++)row.push(dy[t-j]);
+    X.push(row);Y.push(dy[t]);
+  }
+  if(X.length<8)return null;
+  const fit=ols(X,Y);if(!fit)return null;
+  const res=Y.map((yv,r)=>yv-X[r].reduce((s,v,k)=>s+v*fit.coef[k],0));
+  const se=Math.sqrt(nwVar(res)/X.length);
+  if(!(se>0)||!isFinite(fit.coef[1]))return null;
+  return {stat:fit.coef[1]/se,n:X.length,L};
+}
+function adf(y){
+  // few lags by default: levels and differences become collinear fast. Retry downward if singular.
+  const cap=clamp(Math.round(Math.pow(y.length,0.25)),1,6);
+  for(const L of [cap,Math.max(1,cap-2),1]){
+    const r=adfOnce(y,L);
+    if(r){
+      const crit=y.length<100?-2.56:y.length<250?-2.86:y.length<500?-3.01:-3.16;
+      const stat=r.stat;
+      const p=stat>crit?clamp(Math.exp(-0.9*(stat-crit)),0.001,0.99):clamp(1-Math.exp(0.55*(stat-crit)),0.01,0.99);
+      return {stat,p,stationary:stat>crit,n:r.n,crit,L};
+    }
+  }
+  return {stat:0,p:1,stationary:false,n:0,crit:-2.86,L:0,failed:true};
+}
+function segmentStats(y){
+  const n=y.length,k=Math.max(4,Math.round(n/12)),segs=[],ks=[];
+  for(let s=0;s<n;s+=k){const seg=y.slice(s,Math.min(n,s+k));if(seg.length<3)continue;
+    const X=[],Y=[];for(let t=1;t<seg.length;t++){X.push([1,t]);Y.push(seg[t])}
+    const f=ols(X,Y);const b=f?f.coef[1]:0;segs.push({m:mean(seg),s:sd(seg),slope:b});ks.push(b*k/(sd(seg)||1))}
+  const lev=segs.reduce((a,s)=>a+Math.abs(s.m-segs[0].m),0)/Math.max(1,segs.length)/(sd(y)||1);
+  const amp=segs.reduce((a,s)=>a+s.s,0)/Math.max(1,segs.length)/(sd(y)||1);
+  const kurt=K=>(mean(ks.map(v=>Math.pow(v-K,3)))/(sd(ks)||1)**3);
+  return {lev,amp,kurt:kurt(0)};
+}
+
+/* =========================================================================
+   2 · SERIES GENERATOR  (the Lab)
+   ========================================================================= */
+const DEFAULTS={n:144,m:12,m2:0,trend:.45,seas:'mul',seasAmp:.30,seasAmp2:0,noise:.10,curve:0,cp:0,outl:0,inter:0,exog:.5,rw:0};
+let GEN=Object.assign({},DEFAULTS);
+
+function generate(g,seed){
+  const rnd=mulberry32(seed>>>0);
+  const n=Math.max(2,Math.round(g.n)), m=Math.max(1,Math.round(g.m));
+  const rw=isFinite(g.rw)?clamp(g.rw,0,1):0;      // an undefined knob must not become NaN
+  const y=new Array(n), x=new Array(n);
+  for(let t=0;t<n;t++)x[t]=0.6*Math.sin(2*Math.PI*t/(m*7.3))+0.4*Math.sin(2*Math.PI*t/(m*2.17+1))+gauss(rnd)*0.5;
+  const base=100;
+  let slope=(g.trend*base)/n, intercept=0;
+  const cpIdx=[];
+  for(let c=0;c<Math.round(g.cp);c++)cpIdx.push(Math.floor(n*(0.3+0.55*rnd())));
+  cpIdx.sort((a,b)=>a-b);
+  let cpi=0,walk=0;
+  for(let t=0;t<n;t++){
+    while(cpi<cpIdx.length&&t>=cpIdx[cpi]){slope+=(rnd()-0.3)*Math.abs(g.trend*base)/n*4;cpi++}
+    const p=t/n;
+    const level=base+intercept+g.curve*base*Math.sin(Math.PI*p);
+    intercept+=slope;
+    let v=level;
+    if(g.seas!=='none'&&m>1){
+      const phase=2*Math.PI*t/m;
+      const s=g.seasAmp*(0.75*Math.sin(phase)+0.25*Math.sin(2*phase));
+      v = g.seas==='mul' ? level*(1+s) : level+s*base*0.55;
+    }
+    if(g.m2>1&&g.seasAmp2>0){
+      const M=Math.max(2,Math.round(g.m2));
+      const s2=g.seasAmp2*(0.7*Math.sin(2*Math.PI*t/M)+0.3*Math.sin(4*Math.PI*t/M));
+      v = g.seas==='mul' ? v*(1+s2) : v+s2*base*0.4;
+    }
+    if(g.exog>0)v+=g.exog*base*0.55*x[t];
+    let shock=g.noise*(g.outl>0?(rnd()<0.03?3+4*rnd():1):1)*base*gauss(rnd);
+    if(g.outl>0&&rnd()<g.outl*0.02)shock+=(rnd()-0.5)*base*4*g.outl;
+    // rw blends iid noise (rw=0) into a cumulative random walk (rw=1)
+    walk+=shock;
+    v+=(1-rw)*shock+rw*walk;
+    if(g.inter>0&&rnd()<g.inter)v=0;
+    y[t]=Math.max(0,v);
+  }
+  return {y,x,m};
+}
+
+/* =========================================================================
+   3 · FORECASTERS  (teaching implementations of each family)
+   ========================================================================= */
+function fNaive(y,h){return new Array(h).fill(y[y.length-1])}
+function fDrift(y,h){const b=(y[y.length-1]-y[0])/Math.max(1,y.length-1);return Array.from({length:h},(_,i)=>y[y.length-1]+b*(i+1))}
+function fSNaive(y,h,m){const out=[];for(let i=0;i<h;i++){const j=y.length-m+(i%m);out.push(y[j>=0?j:0])}return out}
+function sseOf(arr,f){let s=0;for(let i=1;i<arr.length;i++){const e=f[i-1]-arr[i];s+=e*e}return s}
+function fSES(y,h){
+  let best={sse:Infinity};
+  for(const a of [0.05,0.15,0.3,0.5,0.75,0.95]){
+    let l=y[0];let s=0;for(let t=1;t<y.length;t++){const f=l;const e=f-y[t];s+=e*e;l=a*y[t]+(1-a)*l}
+    if(s<best.sse)best={sse:s,a,l};
+  }
+  return new Array(h).fill(best.l);
+}
+function fHolt(y,h,damp){
+  let best={sse:Infinity};
+  for(const a of [0.1,0.3,0.6,0.9])for(const b of [0.02,0.1,0.3,0.6]){
+    let l=y[0],tr=y.length>1?y[1]-y[0]:0,s=0;
+    for(let t=1;t<y.length;t++){
+      const f=l+tr;s+=(f-y[t])*(f-y[t]);
+      const lo=l;l=a*y[t]+(1-a)*(l+tr);tr=b*(l-lo)+(1-b)*tr;
+    }
+    if(s<best.sse)best={sse:s,l,tr};
+  }
+  const phi=damp===undefined?0.9:damp,out=[];
+  for(let i=1;i<=h;i++){
+    const cum=phi>=1?i:(1-Math.pow(phi,i))/(1-phi);
+    out.push(best.l+cum*best.tr);
+  }
+  return clampForecast(out,y);
+}
+/* Holt-Winters on an already-transformed series z. For multiplicative seasonality the
+   caller passes log(y), so the recursion is additive in logs and the seasonal state stays
+   a LOG factor -- it must be exponentiated at forecast time, not used as a raw multiplier. */
+function hwIter(z,m,a,b,g){
+  const n=z.length;
+  const head=z.slice(0,m);
+  let l=mean(head);
+  const s=head.map(v=>v-l);
+  let tr=0;
+  if(n>=2*m){
+    const h1=mean(head)||1e-6,h2=mean(z.slice(m,2*m));
+    tr=(h2-h1)/m;
+  }
+  let sse=0;
+  for(let t=m;t<n;t++){
+    const idx=t%m;
+    const e=(l+tr+s[idx])-z[t];
+    sse+=e*e;
+    const lN=a*(z[t]-s[idx])+(1-a)*(l+tr);
+    const tN=b*(lN-l)+(1-b)*tr;
+    s[idx]=g*(z[t]-lN)+(1-g)*s[idx];
+    l=lN;tr=tN;
+  }
+  return {sse,l,tr,s,m};
+}
+function fHW(y,h,m,type){
+  if(m<2||y.length<3*m)return fHolt(y,h);
+  const mul=type==='mul';
+  const z=mul?y.map(v=>Math.log(Math.max(1e-6,v))):y;
+  let best={sse:Infinity};
+  for(const a of [0.1,0.3,0.6])for(const b of [0.02,0.1,0.3])for(const g of [0.05,0.2,0.5]){
+    const st=hwIter(z,m,a,b,g);
+    if(isFinite(st.sse)&&st.sse<best.sse)best=st;
+  }
+  if(!isFinite(best.sse))return fHolt(y,h);
+  const phi=0.9,out=[];
+  for(let i=1;i<=h;i++){
+    const cum=(1-Math.pow(phi,i))/(1-phi);
+    const v=best.l+cum*best.tr+best.s[(i-1)%m];
+    out.push(mul?Math.exp(v):v);
+  }
+  return clampForecast(out,y);
+}
+function fitAR(y,p){
+  const n=y.length;if(n<p+8)return null;
+  const X=[],Y=[];
+  for(let t=p;t<n;t++){const row=[1];for(let i=1;i<=p;i++)row.push(y[t-i]);X.push(row);Y.push(y[t])}
+  const f=ols(X,Y);if(!f)return null;
+  // reject near-unstable / explosive fits: they produce astronomically diverging forecasts
+  const phi=f.coef.slice(1);
+  const pers=phi.reduce((a,v)=>a+v,0);
+  if(phi.some(v=>Math.abs(v)>2.5)||Math.abs(pers)>0.97)return null;
+  return {p,coef:f.coef,pers};
+}
+/* Guard against absurd extrapolations: a forecast 50x beyond anything observed is a
+   numerical failure, not a prediction, and would silently dominate a backtest. */
+function clampForecast(vals,ref){
+  const cap=Math.max(1e-9,Math.max.apply(null,ref.map(Math.abs)))*5;
+  const out=vals.map(v=>{
+    if(!isFinite(v))return ref[ref.length-1];
+    return clamp(v,-cap,cap);
+  });
+  // never predict a negative level for a non-negative series
+  if(ref.every(v=>v>=0))for(let i=0;i<out.length;i++)if(out[i]<0)out[i]=0;
+  return out;
+}
+function fARIMA(y,h){
+  // ARIMA(p,1,0) with drift: fit AR(p) on the differenced series, iterate, integrate back
+  const dy=diff(y,1);
+  let p=1,m=null;
+  for(const q of [1,2,3]){const c=fitAR(dy,q);if(c){m=c;p=q;break}}
+  if(!m)return fDrift(y,h);
+  const dmean=mean(dy.slice(-Math.min(dy.length,60)));
+  const hist=dy.slice();
+  const step=[];
+  for(let i=0;i<h;i++){
+    const row=[1];
+    for(let j=1;j<=p;j++)row.push(hist[hist.length-j]);
+    let v=0;
+    for(let k=0;k<=p;k++)v+=m.coef[k]*row[k];
+    v+=dmean;
+    if(!isFinite(v))v=dmean;
+    step.push(v);hist.push(v);
+  }
+  const out=[];
+  let prev=y[y.length-1];
+  for(let i=0;i<h;i++){prev=prev+step[i];out.push(prev)}
+  return clampForecast(out,y);
+}
+function fitRegETS(y,x,h,xf){
+  const n=Math.min(y.length,x.length);
+  if(n<40||!x)return fHolt(y,h,0.9);
+  const L=6,X=[],Y=[];
+  for(let t=L;t<n;t++){const row=[1];for(let j=1;j<=L;j++)row.push(x[t-j]);X.push(row);Y.push(y[t])}
+  const f=ols(X,Y);if(!f)return fHolt(y,h,0.9);
+  const resid=Y.map((v,i)=>v-X[i].reduce((s,q,k)=>s+q*f.coef[k],0));
+  const base=fHolt(resid,h,0.9);              // damped trend on the regression residual
+  const src=(xf&&xf.length>=h)?xf:x;
+  const out=[];
+  for(let i=0;i<h;i++){
+    let pred=0;
+    for(let k=0;k<=L;k++){
+      const xv = k===0 ? 1 : (src[i-k]!=null && isFinite(src[i-k]) ? src[i-k] : 0);
+      pred+=f.coef[k]*xv;
+    }
+    out.push(pred + (base[i]||0));
+  }
+  return clampForecast(out,y);
+}
+function fMSTL(y,h,ms,type){
+  // classical multi-seasonal: deseasonalise by each period, fit SES on the trend, re-add
+  let z=y.slice(),comps=[];
+  for(const m of ms){
+    if(m<2||y.length<3*m)continue;
+    const d=decompose(y,m,type);
+    comps.push(d.seasonal);
+    z=z.map((v,i)=> type==='mul'? v/(d.seasonal[i]||1) : v-d.seasonal[i]);
+  }
+  const lvl=fSES(z,h);
+  const out=[];
+  for(let i=0;i<h;i++){
+    let v=type==='mul'? lvl[i] : lvl[i];
+    for(const c of comps){const s=c[(y.length+i)%c.length];
+      if(type==='mul')v*= (1+s); else v+=s}
+    out.push(v);
+  }
+  return clampForecast(out,y);
+}
+const INTERVAL={1.96:1.96};
+function residSd(fitFn,y){ // one-step resid sd approximated by in-sample SSE of the family's core
+  return null;
+}
+function band(y,h,sdIn){
+  const lo=[],hi=[];
+  for(let i=1;i<=h;i++){const w=sdIn*Math.sqrt(1+(i-1)*0.6);lo.push(y[y.length-1]-1.96*w);hi.push(y[y.length-1]+1.96*w)}
+  return {lo,hi};
+}
+
+/* =========================================================================
+   4 · BACKTEST  (rolling origin)
+   ========================================================================= */
+const MODELS={
+  naive:  {name:'Naive (random walk)', tag:'baseline', fn:(y,h,C)=>fNaive(y,h)},
+  snaive: {name:'Seasonal naive',      tag:'baseline', fn:(y,h,C)=>fSNaive(y,h,C.m)},
+  ses:    {name:'Simple exp. smoothing',tag:'ETS',      fn:(y,h)=>fSES(y,h)},
+  holt:   {name:'Holt (damped trend)',  tag:'ETS',      fn:(y,h,C)=>fHolt(y,h,0.9)},
+  hw:     {name:'Holt-Winters',         tag:'ETS',      fn:(y,h,C)=>fHW(y,h,C.m,C.type)},
+  arima:  {name:'ARIMA (auto AR p)',    tag:'ARIMA',    fn:(y,h)=>fARIMA(y,h)},
+  regress:{name:'Regression + ETS resid',tag:'dynamic regression', fn:(y,h,C)=>fitRegETS(y,C.x,h,C.xf)},
+  mstl:   {name:'MSTL (multi-seasonal)',tag:'decomposition', fn:(y,h,C)=>fMSTL(y,h,C.ms,C.type)}
+};
+function backtest(y,h,origins,ctx){
+  const n=y.length;const res={};
+  const maxO=Math.max(1,Math.floor((n-h)/h));
+  const O=clamp(origins,1,Math.min(8,maxO||1));
+  for(const key of Object.keys(MODELS)){
+    const errs=[],acts=[];
+    for(let k=0;k<O;k++){
+      const cut=n-k*h;
+      const train=y.slice(0,cut),test=y.slice(cut,cut+h);
+      if(test.length<h||train.length<25)continue;
+      let p;
+      try{p=MODELS[key].fn(train,h,ctx&&ctx.train?ctx.train(cut,cut+h):ctx);}catch(e){p=null}
+      if(!p)continue;
+      for(let i=0;i<test.length;i++){if(isFinite(p[i])){errs.push(p[i]-test[i]);acts.push(test[i])}}
+    }
+    if(errs.length<3)continue;
+    const rmse=Math.sqrt(mean(errs.map(e=>e*e)));
+    const mae=mean(errs.map(e=>Math.abs(e)));
+    const mape=mean(errs.map((e,i)=>Math.abs(acts[i])>1e-9?Math.abs(e/acts[i]):0))*100;
+    res[key]={rmse,mae,mape,n:errs.length,points:errs.map((e,i)=>({a:acts[i],e}))};
+  }
+  const nb=res.naive;if(nb&&nb.rmse>0)for(const k in res)res[k].skill=1-res[k].rmse/nb.rmse;
+  return res;
+}
+
+/* =========================================================================
+   5 · PROFILE  (the feature vector)
+   ========================================================================= */
+const CAND_PERIODS=[4,5,6,7,12,24,48,144,168,365];
+let PROF=null;
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+/* Two periods are "the same seasonal phenomenon" if one is a small multiple of the other:
+   m=12 and m=24 are one 12-cycle, not two independent seasonalities. */
+function harmonic(m1,m2){
+  const g=gcd(m1,m2);const a=m1/g,b=m2/g;
+  return (a===1&&b<=3)||(b===1&&a<=3);
+}
+/* Stricter: ANY integer-multiple relationship. Used when isolating one period for
+   measurement, because a multiple cycle cannot be separated from the cycle it contains. */
+const multOf=(a,b)=>b%a===0||a%b===0;
+
+function acfPeakOk(a,m,n){
+  if(m<2||m>=a.length-1)return false;
+  if(a[m]<a[m-1]||a[m]<a[m+1])return false;      // must be a local maximum
+  return a[m]>1.96/Math.sqrt(n);                  // and statistically notable
+}
+/* Detect seasonal periods by iterative removal, the way MSTL does it.
+   Scoring a short period on the raw series is unreliable: a longer cycle inflates the
+   variance that F(S) is measured against and dilutes the shorter one. So find the most
+   prominent cycle, strip it, then look again in what is left. Returns periods ascending. */
+function residualAfter(y,m,also){
+  let w=y.slice();
+  const list=[m].concat(also||[]).filter(v=>v&&v>=2);
+  return removePeriods(w,list);
+}
+function removePeriods(y,list){
+  let w=y.slice();
+  for(const k of list){if(!k||k<2||w.length<3*k)continue;const d=classicalDecomp(w,k);w=d.detrended.map((v,t)=>v-d.seasonal[t])}
+  return w;
+}
+function detectSeasons(y,periods,fsGate,fsGateSecondary){
+  const found=[];
+  let work=y.slice();
+  const n0=y.length;
+  for(const m of periods.slice().sort((a,b)=>a-b)){
+    if(found.length>=3)break;
+    if(found.some(f=>harmonic(f,m)))continue;   // same cycle seen at a multiple lag
+    if(n0/m<6)continue;                          // identification floor
+    const fs=seasonalStrength(work,m);
+    if(found.length===0){
+      // the primary must clear both bars: F(S) for structure, ACF for significance
+      const n=work.length;
+      const a=acf(work,Math.min(420,Math.max(2,Math.floor(n/3))));
+      if(m>=a.length-1)continue;
+      if(!(a[m]>1.96/Math.sqrt(n)))continue;
+      if(fs<fsGate)continue;
+    }else{
+      /* A secondary is judged on F(S) alone. The ACF at a long lag is a global statistic
+         that a residual's low-frequency content swamps, while F(S) asks the targeted
+         question directly: is there a stable period-m pattern left in here? Aliased
+         multiples of the period already removed score far below the gate. */
+      if(fs<fsGateSecondary)continue;
+    }
+    found.push(m);
+    const d=classicalDecomp(work,m);
+    work=d.detrended.map((v,t)=>v-d.seasonal[t]);
+  }
+  return found;
+}
+function profile(y,x){
+  const n=y.length;
+  const zeroFrac=y.filter(v=>v<=1e-9).length/n;
+  const fsThresh=zeroFrac>0.2?0.45:0.30;          // zero-inflated series fake seasonality easily
+  const periods=CAND_PERIODS.filter(m=>m>1&&n/m>=6);
+  const a=acf(y,Math.min(Math.max(3*Math.max(6,GEN.m),24),Math.floor(n/3),420));
+  const FT=trendStrength(y);
+  const thr=zeroFrac>0.2?{a:0.35,b:0.60}:{a:0.20,b:0.45};
+  const thrSec=zeroFrac>0.2?0.25:0.10;
+  const ms=detectSeasons(y,periods,thr.a,thrSec);
+  const m1=ms.length?ms[0]:null;
+  /* Measure the primary cycle on the series with any OTHER detected cycle removed, so a
+     longer cycle cannot dilute it and vice versa. */
+  /* Measure the primary cycle's strength on a series with the other DETECTED cycles removed.
+   Cycles that are harmonically related to m1 must be left in place: since 24 divides 168,
+   removing the weekly cycle would also remove the daily one and F(S) would read zero. */
+let base=y;
+  if(ms.length>1)base=removePeriods(y,ms.filter(v=>v!==m1&&!multOf(m1,v)));
+  const FS1=m1?seasonalStrength(base,m1):0;
+  const ampDrift=ampDriftFn(y,m1);
+  const fsAdd=m1?seasonalStrength(base,m1):0;
+  const fsMul=m1?mulSeasonalStrength(base,m1):0;
+  const type=(!m1||ampDrift<=0.035&&fsMul<=fsAdd*1.15)?'add':'mul';
+  const mulFS=fsMul;
+  const second=ms.length>1?{m:ms[1],FS:seasonalStrength(residualAfter(y,m1),ms[1])}:null;
+
+  const acf1=a[1]!=null?a[1]:0;
+  const ad=adf(y), adD=adf(diff(y,1));
+  const rwAcf1=acf(diff(y,1),2)[1]||0;
+  const d=segmentStats(y);
+  const exogCorr=x?Math.abs(corr(y,x.slice(0,n))):0;
+  const noSeason=!m1;
+  /* A random walk is defined by its INCREMENTS: differenced data indistinguishable from white
+   noise. Note that a random walk's LEVEL always looks strongly trending — that is an artefact
+   of the path taken, not a repeatable drift — so trend strength must not veto this test.
+   ADF is reported separately but deliberately does not drive the call. */
+  const randomWalk=noSeason&&Math.abs(acf1)>0.8&&Math.abs(rwAcf1)<0.15;
+  const pureNoise=noSeason&&Math.abs(acf1)<0.15&&FT<0.35;
+
+  return {
+    n,m1,FS1,FT,ms,second,type,mulFS,
+    cycles:m1?n/m1:null, acf1, adf:ad, adfDiff:adD, seg:d,
+    zeroFrac,exogCorr,ampDrift,
+    reqM:Math.round(GEN.m), reqCycles:n/Math.max(1,Math.round(GEN.m)),
+    fsThresh:thr.a,
+    seasonalVerdict:!m1?'none':FS1<0.4?'weak':FS1<0.64?'moderate':'strong',
+    trendVerdict:FT<0.2?'none':FT<0.5?'moderate':'strong',
+    randomWalk, pureNoise,
+    rwAcf1
+  };
+}
+/* relative growth of seasonal amplitude per cycle (the multiplicative-seasonality signal).
+   Measured on the detrended series, cycle by cycle -- not on the averaged seasonal shape,
+   which is stationary by construction and would always give zero. */
+function ampDriftFn(y,m){
+  if(!m||m<2||y.length<4*m)return 0;
+  const W=oddWindow(Math.max(3,y.length/4));
+  const T=maTrend(y,W);
+  const d=y.map((v,t)=>v-T[t]);
+  const full=Math.floor(y.length/m);
+  const amps=[];
+  for(let c=0;c<full;c++){
+    const seg=d.slice(c*m,(c+1)*m);
+    amps.push(Math.max(...seg)-Math.min(...seg));
+  }
+  const avg=mean(amps);
+  if(avg<=1e-9)return 0;
+  let num=0,den=0;const mid=(full-1)/2;
+  for(let c=0;c<full;c++){num+=(c-mid)*(amps[c]-avg);den+=(c-mid)*(c-mid)}
+  return den>0?Math.abs(num/den)/avg:0;
+}
+
+/* =========================================================================
+   6 · RULE ENGINE  (the recommender)
+   ========================================================================= */
+const CAND={
+  naive:{n:'Naive / random walk',f:'baseline'},
+  snaive:{n:'Seasonal naive',f:'baseline'},
+  ses:{n:'Simple exponential smoothing',f:'ETS'},
+  holt:{n:"Holt's linear (damped)",f:'ETS'},
+  hw:{n:'Holt-Winters (ETS)',f:'ETS'},
+  arima:{n:'ARIMA / SARIMA',f:'ARIMA'},
+  regress:{n:'Dynamic regression + ETS',f:'Regression'},
+  prophet:{n:'Prophet',f:'Structural'},
+  mstl:{n:'MSTL / TBATS',f:'Decomposition'},
+  gbm:{n:'Gradient boosting (direct)',f:'ML'}
+};
+const BASE={naive:8,snaive:8,ses:14,holt:14,hw:14,arima:14,regress:14,prophet:12,mstl:12,gbm:10};
+
+function recommend(P){
+  const S={},R={},B={};
+  for(const k in BASE){S[k]=BASE[k];R[k]=[];}
+  const add=(k,w,why)=>{S[k]+=w;R[k].push(why)};
+
+  /* --- feasibility blocks (hard refusals) --- */
+  if(P.m1&&P.cycles!=null){
+    if(P.cycles<2)for(const k of ['hw','snaive','mstl','arima','prophet'])
+      B[k]=`only ${P.cycles.toFixed(1)} cycles for m=${P.m1} \u2014 seasonal parameter unidentifiable`;
+    else if(P.cycles<4)for(const k of ['hw','mstl','prophet'])
+      B[k]=`${P.cycles.toFixed(1)} cycles for m=${P.m1} is unstable (4+ recommended)`;
+  }
+  if(P.reqCycles!=null&&P.reqCycles<2)for(const k of ['hw','snaive','mstl','arima','prophet'])
+    B[k]=`requested m=${P.reqM} gives only ${P.reqCycles.toFixed(1)} cycles in ${P.n} points`;
+  if(P.second&&P.n/P.second.m<3)B.mstl='longest secondary period lacks enough cycles';
+
+  /* --- structure rules --- */
+  if(P.randomWalk){
+    add('naive',30,'increments carry no information \u2192 random walk, so today\u2019s value is the forecast');
+    add('arima',12,'ARIMA(0,1,0) with drift is the minimal honest specification here');
+    add('ses',-8,'smoothing a random walk adds lag without skill');
+    add('hw',-10,'no seasonal structure to exploit');
+    add('holt',-18,'a random walk\u2019s apparent trend is an artefact of the path taken, not a repeatable drift');
+  }
+  if(P.pureNoise){
+    add('ses',20,'values are independent with no memory \u2014 the long-run mean is the best forecast');
+    add('naive',8,'near-independence makes the naive forecast nearly as good as the mean');
+    add('arima',-6,'no autocorrelation to fit');
+  }
+  if(P.trendVerdict!=='none'&&!P.randomWalk){
+    // a strong seasonal component means the trend is the secondary story
+    const trendW=22*(1-0.6*Math.min(1,P.FS1));
+    add('holt',trendW,`trend strength F(T)=${P.FT.toFixed(2)} — explicit trend term pays off`);
+    add('arima',10,'differencing handles the drift inside the model');
+    if(P.seg.kurt>1.6||P.seg.kurt<-1.6)add('prophet',12,'trend is not linear — changepoints/segments indicated');
+    if(P.trendVerdict==='strong'){add('holt',6,'strong trend: test damping to avoid runaway extrapolation')}
+  } else {
+    add('ses',16,'no trend and no seasonal structure → level-only smoothing is sufficient');
+    add('holt',-6,'a trend term on a trendless series fits noise');
+  }
+  if(P.m1){
+    const label=`seasonality at m=${P.m1} (strength ${P.FS1.toFixed(2)}, ${P.cycles.toFixed(1)} cycles)`;
+    add('hw',26,label);
+    add('snaive',20,`${label} — seasonal naive is the benchmark to beat`);
+    add('arima',14,'seasonal ARIMA as a second opinion on the same structure');
+    add('ses',-12,'ignores a confirmed seasonal cycle');
+    if(P.ampDrift>0.04){
+      add('hw',8,'seasonal amplitude drifts with the level \u2192 multiplicative seasonality');
+      add('prophet',6,'log-space modelling handles amplitude scaling');
+    }
+    if(P.trendVerdict==='none'&&P.FS1>0.3)add('hw',6,'no trend: additive Holt-Winters is well specified');
+  } else {
+    add('hw',-8,'no seasonal period detected — a seasonal term would fit noise');
+  }
+  if(P.ms.length>1){
+    add('mstl',30,`two confirmed periods: m=${P.ms[0]} and m=${P.ms[1]} — needs a multi-seasonal model`);
+    add('hw',-12,'single-period Holt-Winters cannot represent both cycles');
+    add('prophet',8,'Fourier terms can carry several seasonalities simultaneously');
+  }
+  if(P.zeroFrac>0.2){
+    add('gbm',-20,`${(P.zeroFrac*100).toFixed(0)}% zero periods — a count/classification approach is needed (Croston, TSB)`);
+    add('naive',8,'zeros dominate; a naive baseline is hard to beat');
+    for(const k of ['hw','ses','holt','arima'])S[k]-=14;
+  }
+  if(P.seg.lev>1.1)add('prophet',8,'level shifts across the sample — structural/changepoint model');
+  if(P.seg.amp>1.5)add('hw',8,'variance is not stable — multiplicative or log-domain modelling');
+  if(P.exogCorr>0.45){
+    add('regress',26,`exogenous driver explains ${(P.exogCorr*100).toFixed(0)}% of level variation`);
+    add('prophet',14,'built-in regressor interface, changepoints + seasonality in one fit');
+    add('gbm',10,'captures nonlinear driver effects');
+    add('ses',-4,'ignores available external information');
+  } else if(P.exogCorr>0.2){
+    add('regress',10,'weak but non-trivial driver correlation');
+  }
+  if(P.n<200){add('gbm',-14,`only ${P.n} observations — not enough to learn a flexible model safely`)}
+  add('naive',6,'always benchmark against the naive forecast');
+  add('prophet',3,'robust default when the series has many exceptions to document');
+
+  const list=Object.keys(CAND).map(k=>({key:k,name:CAND[k].n,fam:CAND[k].f,score:S[k],reasons:R[k],blocked:B[k]||null}))
+    .sort((a,b)=>{const ba=a.blocked?1:0,bb=b.blocked?1:0;return ba-bb||b.score-a.score});
+  return {list,scores:S,blocks:B,reasons:R};
+}
+
+/* =========================================================================
+   7 · SVG PLOTTING
+   ========================================================================= */
+function svgLine(series,o){
+  o=o||{};const W=o.w||900,H=o.h||150,col=o.color||'#60a5fa',sw=o.sw||1.6,dash=o.dash||null;
+  const vals=series.filter(v=>v!=null&&isFinite(v));
+  if(!vals.length)return '';
+  const lo=o.ymin!=null?o.ymin:Math.min(...vals),hi=o.ymax!=null?o.ymax:Math.max(...vals);
+  const pad=(hi-lo)*0.09||Math.abs(hi)*0.09||1;
+  const y0=lo-pad,y1=hi+pad,n=series.length;
+  const X=i=>(i/Math.max(1,n-1))*W, Y=v=>H-((v-y0)/(y1-y0||1))*H;
+  let d='',on=false;
+  series.forEach((v,i)=>{if(v==null||!isFinite(v)){on=false;return}d+=(on?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' ';on=true});
+  let band='';
+  if(o.band){
+    let up='',dn='';
+    o.band.hi.forEach((v,i)=>{if(v==null||!isFinite(v))return;up+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '});
+    for(let i=o.band.lo.length-1;i>=0;i--){const v=o.band.lo[i];if(v==null||!isFinite(v))continue;dn+='L'+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '}
+    band=`<path d="${up}${dn}Z" fill="${o.bandColor||'rgba(251,191,36,.13)'}" stroke="none"/>`;
+  }
+  const line=`<path d="${d}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash||''}" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px;display:block">${band}${line}</svg>`;
+}
+/* multi-layer chart with a SHARED y-scale (so overlays align) */
+function svgChart(layers,o){
+  o=o||{};const W=o.w||900,H=o.h||150;
+  const N=o.n||Math.max.apply(null,layers.map(l=>l.data.length));
+  let lo=Infinity,hi=-Infinity;
+  const scan=a=>{for(let i=0;i<a.length;i++){const v=a[i];if(v!=null&&isFinite(v)){if(v<lo)lo=v;if(v>hi)hi=v}}};
+  layers.forEach(l=>{scan(l.data);if(l.band){scan(l.band.lo);scan(l.band.hi)}});
+  if(!isFinite(lo)){lo=0;hi=1}
+  const ymin=o.ymin!=null?o.ymin:lo, ymax=o.ymax!=null?o.ymax:hi;
+  const pad=(ymax-ymin)*0.09||Math.abs(ymax)*0.09||1;
+  const y0=ymin-pad,y1=ymax+pad;
+  const X=i=>(i/Math.max(1,N-1))*W, Y=v=>H-((v-y0)/(y1-y0||1))*H;
+  let out='';
+  layers.forEach(l=>{
+    if(l.band){
+      let d='';
+      l.band.hi.forEach((v,i)=>{if(v==null||!isFinite(v))return;d+=(d?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '});
+      for(let i=l.band.lo.length-1;i>=0;i--){const v=l.band.lo[i];if(v==null||!isFinite(v))continue;d+='L'+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '}
+      if(d)out+=`<path d="${d}Z" fill="${l.bandColor||'rgba(251,191,36,.14)'}" stroke="none"/>`;
+    }
+    let d='',on=false;
+    if(l.data&&l.data.length){
+      l.data.forEach((v,i)=>{if(v==null||!isFinite(v)){on=false;return}d+=(on?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' ';on=true});
+      out+=`<path d="${d}" fill="none" stroke="${l.color}" stroke-width="${l.sw||1.5}" stroke-dasharray="${l.dash||''}" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+    }
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px;display:block">${out}</svg>`;
+}
+function svgBars(vals,o){
+  o=o||{};const W=o.w||420,H=o.h||150,hi=Math.max(0.001,...vals.map(v=>Math.abs(v)));
+  const bw=W/Math.max(1,vals.length),bw2=Math.min(6,bw*0.55);
+  const Z=H-14,baseY=Z;
+  let bars='',zero=`<line x1="0" y1="${baseY}" x2="${W}" y2="${baseY}" stroke="#333b52" stroke-width="1"/>`;
+  const ci=o.ci!=null?o.ci:0;
+  vals.forEach((v,i)=>{
+    const h=(Math.abs(v)/hi)*(Z-6),cx=i*bw+bw/2;
+    const c=(o.highlight!=null&&o.highlight.includes(i))?'#fbbf24':(v<0?'#f87171':(o.color||'#60a5fa'));
+    bars+=`<rect x="${(cx-bw2/2).toFixed(1)}" y="${(baseY-h).toFixed(1)}" width="${bw2.toFixed(1)}" height="${h.toFixed(1)}" fill="${c}" opacity="${Math.abs(v)>=ci?1:.55}" rx="1"/>`;
+  });
+  const bandY=(Z-6)*(1-ci/hi);
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px;display:block">
+    <rect x="0" y="${bandY.toFixed(1)}" width="${W}" height="${(baseY-bandY).toFixed(1)}" fill="rgba(94,234,212,.05)"/>
+    ${zero}${bars}</svg>`;
+}
+function meta(lo,hi,extra){
+  return `<span class="range">min ${fmt(lo)} · max ${fmt(hi)}</span>${extra||''}`;
+}
+function fmt(v){
+  if(v==null||!isFinite(v))return '—';
+  const a=Math.abs(v);
+  if(a>=1e6)return (v/1e6).toFixed(1)+'M';
+  if(a>=1e4)return (v/1e3).toFixed(1)+'k';
+  if(a>=100)return v.toFixed(0);
+  if(a>=1)return v.toFixed(1);
+  if(a>=0.01)return v.toFixed(3);
+  return v.toExponential(1);
+}
+
+/* =========================================================================
+   8 · UI WIRING
+   ========================================================================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const KNOBS=[
+  {k:'n',       label:'n · points',      min:40,  max:1200, step:20,   fmt:v=>v},
+  {k:'m',       label:'m · season',      type:'seg', opts:[4,7,12,24,52,168], fmt:v=>'m='+v},
+  {k:'m2',      label:'m2 · 2nd season', type:'seg', opts:[0,24,52,168,365], fmt:v=>v?'m2='+v:'off'},
+  {k:'trend',   label:'trend',           min:-1,  max:1,   step:.05,  fmt:v=>v.toFixed(2)},
+  {k:'curve',   label:'curvature',       min:-1,  max:1,   step:.05,  fmt:v=>v.toFixed(2)},
+  {k:'seas',    label:'seasonality',     type:'seg', opts:['none','add','mul'], fmt:v=>v},
+  {k:'seasAmp', label:'season amp',      min:0,   max:1,   step:.02,  fmt:v=>(v*100).toFixed(0)+'%'},
+  {k:'seasAmp2',label:'2nd season amp',  min:0,   max:1,   step:.02,  fmt:v=>(v*100).toFixed(0)+'%'},
+  {k:'noise',   label:'noise',           min:0,   max:.6,  step:.02,  fmt:v=>v.toFixed(2)},
+  {k:'rw',      label:'iid \u2192 random walk', min:0, max:1, step:.05, fmt:v=>v<=0?'iid':v>=1?'random walk':(v*100).toFixed(0)+'%'},
+  {k:'outl',    label:'outliers',        min:0,   max:1,   step:.05,  fmt:v=>v.toFixed(2)},
+  {k:'cp',      label:'changepoints',    min:0,   max:3,   step:1,    fmt:v=>v},
+  {k:'inter',   label:'intermittency',   min:0,   max:.8,  step:.05,  fmt:v=>(v*100).toFixed(0)+'% zero'},
+  {k:'exog',    label:'exog strength',   min:0,   max:1,   step:.05,  fmt:v=>v.toFixed(2)}
+];
+
+const SCENARIOS=[
+  {id:'air', ic:'NB1', name:'Air passengers',
+   d:'Monthly, n=144, m=12. Linear trend, multiplicative seasonality. The Holt-Winters case study.',
+   g:{n:144,m:12,m2:0,trend:.75,curve:0,seas:'mul',seasAmp:.42,seasAmp2:0,noise:.05,outl:0,cp:0,inter:0,exog:0}},
+  {id:'stock', ic:'NB2', name:'Stock price (GOOGL)',
+   d:'Business-day highs, one year. A cumulative random walk: no exploitable structure at all.',
+   g:{n:250,m:5,m2:0,trend:.15,curve:0,seas:'none',seasAmp:0,seasAmp2:0,noise:.45,outl:.3,cp:0,inter:0,exog:0,rw:1}},
+  {id:'power', ic:'NB3', name:'Power demand, 10-min',
+   d:'m=144 on 2000 rows → 14 cycles. The identifiability trap.',
+   g:{n:2000,m:144,m2:0,trend:.25,curve:0,seas:'mul',seasAmp:.3,seasAmp2:0,noise:.09,outl:.1,cp:0,inter:0,exog:.35}},
+  {id:'powerHourly', ic:'NB3⁺', name:'Same data, hourly',
+   d:'m=24 plus a weekly m=168 cycle, on 3500 hourly points. Both cycles are estimable.',
+   g:{n:3500,m:24,m2:168,trend:.3,curve:0,seas:'mul',seasAmp:.28,seasAmp2:.45,noise:.08,outl:.1,cp:0,inter:0,exog:.35}},
+  {id:'inter', ic:'C', name:'Intermittent spare parts',
+   d:'55% zero periods. Continuous models are structurally wrong here.',
+   g:{n:200,m:1,m2:0,trend:.5,curve:0,seas:'none',seasAmp:0,seasAmp2:0,noise:.5,outl:.3,cp:0,inter:.55,exog:0}},
+  {id:'retail', ic:'D', name:'Retail, weekly + yearly',
+   d:'Two genuine seasonalities over 6+ years, a curved trend, promotions and regime shifts.',
+   g:{n:2400,m:7,m2:365,trend:.5,curve:.8,seas:'add',seasAmp:.3,seasAmp2:.5,noise:.1,outl:.4,cp:2,inter:0,exog:.2}}
+];
+let SEED=20260803, CUR_SCEN='air', HORIZON=24, ORIGINS=5, HFIX=0, SER=null;
+
+function buildKnobs(){
+  $('#knobs').innerHTML=KNOBS.map(k=>{
+    if(k.type==='seg'){
+      const tone=k.k==='seas'?o=>(o==='none'?'':o==='add'?'amber':'violet'):()=>'blue';
+      const btns=k.opts.map(o=>`<button data-k="${k.k}" data-v="${o}" data-tone="${tone(o)}" class="${String(GEN[k.k])===String(o)?'on':''}">${o}</button>`).join('');
+      return `<div class="knob"><label><span>${k.label}</span><b id="kv-${k.k}">${k.fmt(GEN[k.k])}</b></label><div class="seg">${btns}</div></div>`;
+    }
+    return `<div class="knob"><label><span>${k.label}</span><b id="kv-${k.k}">${k.fmt(GEN[k.k])}</b></label>`+
+      `<input type="range" data-rk="${k.k}" min="${k.min}" max="${k.max}" step="${k.step}" value="${GEN[k.k]}"></div>`;
+  }).join('');
+  $('#knobs').querySelectorAll('input[data-rk]').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const k=inp.dataset.rk;
+      GEN[k]=parseFloat(inp.value);
+      $('#kv-'+k).textContent=KNOBS.find(x=>x.k===k).fmt(GEN[k]);
+      CUR_SCEN=null;markScen();regen();
+    });
+  });
+  $('#knobs').querySelectorAll('.seg button').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const k=b.dataset.k;GEN[k]=isNaN(parseFloat(b.dataset.v))?b.dataset.v:parseFloat(b.dataset.v);
+      $$('#knobs .seg button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');CUR_SCEN=null;markScen();regen();
+    });
+  });
+}
+function syncKnobs(){
+  KNOBS.forEach(k=>{
+    const e=$('#kv-'+k.k);if(e)e.textContent=k.fmt(GEN[k.k]);
+    const r=$(`input[data-rk="${k.k}"]`);if(r)r.value=GEN[k.k];
+  });
+  $$('#knobs .seg button').forEach(b=>b.classList.toggle('on',String(GEN[b.dataset.k])===String(b.dataset.v)));
+}
+function buildScenarios(){
+  $('#scenarios').innerHTML=SCENARIOS.map(s=>`<button class="scn" data-id="${s.id}"><span class="ic">${s.ic}</span><span><b>${s.name}</b><span>${s.d}</span></span></button>`).join('');
+  $$('.scn').forEach(b=>b.addEventListener('click',()=>applyScenario(b.dataset.id)));
+}
+function markScen(){$$('.scn').forEach(b=>b.classList.toggle('on',b.dataset.id===CUR_SCEN))}
+function applyScenario(id){
+  const s=SCENARIOS.find(x=>x.id===id);if(!s)return;
+  // merge onto DEFAULTS: a scenario that omits a knob must still get a sane value,
+  // otherwise undefined propagates into the generator and poisons the whole series
+  GEN=Object.assign({},DEFAULTS,s.g);CUR_SCEN=id;SEED=(SEED*1664525+1013904223)>>>0;
+  syncKnobs();markScen();regen();
+  $('#engine').scrollIntoView({behavior:'smooth'});
+}
+
+/* ---- render pipeline ---- */
+function regen(){
+  SER=generate(GEN,SEED);
+  PROF=profile(SER.y,SER.x);
+  renderMain();renderDecomp();renderSignals();renderRecs();renderBacktest();
+  const v=PROF.randomWalk?'near-random walk':(PROF.m1?`m=${PROF.m1} · ${PROF.seasonalVerdict} season`:'no seasonality')+' · '+(PROF.trendVerdict==='none'?'no trend':PROF.trendVerdict+' trend');
+  const pv=$('#pillVerdict');pv.textContent=v;pv.className='pill '+(PROF.randomWalk?'w':'');
+}
+function horizonDefault(){
+  if(HFIX)return HFIX;
+  if(GEN.n>=3000)return 168;
+  if(GEN.n>=900)return 90;
+  if(GEN.n>=250)return 30;
+  return 12;
+}
+function renderMain(){
+  const y=SER.y,n=y.length,h=horizonDefault(),cut=n-h;
+  const hideTail=GEN.inter>0.4;
+  const actual=hideTail?y.map((v,i)=>i>=cut?null:v):y;
+  $('#legExog').style.display=GEN.exog>0.05?'inline':'none';
+  $('#chMain').innerHTML=`<div class="ttl"><span>Observed series · ${n} points · horizon h=${h}</span><em>${GEN.seas} seasonality · trend ${GEN.trend>0?'+':''}${GEN.trend}</em></div>`+
+    meta(Math.min.apply(null,y),Math.max.apply(null,y))+
+    svgChart([{data:actual,color:'#60a5fa',sw:GEN.n>900?0.7:1.5}],{h:GEN.n<200?190:150,n:n})+
+    `<div class="fzone" style="left:${(cut/n*100).toFixed(2)}%"></div>`+
+    (hideTail?`<div class="hint" style="position:absolute;bottom:6px;right:12px">tail hidden — intermittent series</div>`:'');
+  const ex=$('#chExog');
+  if(GEN.exog>0.05){
+    ex.style.display='block';
+    ex.innerHTML=`<div class="ttl"><span>Exogenous driver x(t)</span><em>|corr| = ${PROF.exogCorr.toFixed(2)}</em></div>`+
+      svgLine(SER.x,{h:60,color:'#f472b6',sw:1.1});
+  } else ex.style.display='none';
+  const zs=Math.max(2,Math.floor(n*0.45));
+  const z=y.slice(zs,zs+220);
+  $('#chZoom').innerHTML=`<div class="ttl"><span>Zoom · 220 points from t=${zs}</span><em>noise &amp; local structure</em></div>`+svgLine(z,{h:130,color:'#5eead4',sw:1.2});
+  const L=Math.min(2*Math.max(4,GEN.m),Math.floor(n/2.5),160);
+  const A=acf(y,L);
+  const ci=1.96/Math.sqrt(n);
+  $('#chAcf').innerHTML=`<div class="ttl"><span>ACF · 0…${L}</span><em>±1.96/√n shaded · spikes at m and 2m</em></div>`+
+    svgBars(A,{h:130,highlight:[GEN.m,2*GEN.m].filter(v=>v>0&&v<A.length)});
+}
+
+function renderDecomp(){
+  const y=SER.y,m=PROF.m1||Math.min(GEN.m,7);
+  if(!PROF.m1||y.length<3*m){
+    $('#decomp').innerHTML=`<div class="card"><h3>No stable seasonal component detected</h3><p class="sm" style="margin:0">Period m=${GEN.m} does not survive the decomposition test on this series (needs at least 3 cycles and strength > 0.12). Whatever is visible at m is better explained by noise or trend. Turn the season amplitude up, or lower m, to see the panels populate.</p></div>`;
+    return;
+  }
+  const d=classicalDecomp(y,m);
+  const panels=[['Level + trend',d.trend,'#5eead4'],['Seasonal',d.seasonal,'#a78bfa'],['Residual (noise)',d.residual,'#f87171']];
+  $('#decomp').innerHTML=panels.map((p,i)=>`<div class="chart" style="margin:0">
+    <div class="ttl"><span>${p[0]}</span><em>${i===1?`repeats every m=${m} \u00b7 F(S)=${PROF.FS1.toFixed(2)}`:i===0?`window ${d.window} \u00b7 F(T)=${PROF.FT.toFixed(2)}`:'what the model cannot predict'}</em></div>
+    ${meta(Math.min.apply(null,p[1]),Math.max.apply(null,p[1]))}${svgLine(p[1],{h:96,color:p[2],sw:1.1})}</div>`).join('')+
+    `<div class="card" style="grid-column:1/-1">
+      <h4>Reading these three</h4>
+      <p class="sm" style="margin:0">The <b style="color:#5eead4">trend</b> panel says whether you need a trend term at all. The <b style="color:#a78bfa">seasonal</b> panel's repeating shape is literally the template your model will project forward — and if its amplitude drifts up or down across the sample, that decides additive vs. multiplicative. The <b style="color:#f87171">residual</b> panel is your irreducible error floor: <b>no model can do better than this.</b> If the residual looks structured (visible cycles or swings), you have the wrong decomposition and more modelling is available. If it's white noise, you've extracted everything.</p>
+      <p class="sm mut" style="margin:8px 0 0">Panels are additive, so y = trend + seasonal + residual exactly. This series was classified <b>${PROF.type === 'mul' ? 'multiplicative' : 'additive'}</b> (relative amplitude drift ${PROF.ampDrift.toFixed(3)} per cycle) — on a multiplicative series the seasonal panel visibly widens as the level rises, which is the signal to switch the model to <code>seasonal='mul'</code>.</p></div>`;
+}
+
+function renderSignals(){
+  const P=PROF;
+  const bar=(v,c)=>`<div class="meter"><i style="width:${clamp(v*100,0,100).toFixed(0)}%;background:${c}"></i></div>`;
+  const rows=[
+    {v:P.ms[0]?('m='+P.ms[0]):'none',c:P.ms[0]?'#a78bfa':'#5d6577',
+     t:`Seasonal period &amp; strength — <b>${P.seasonalVerdict}</b> (F(S)=${P.FS1.toFixed(2)}, ${P.cycles?P.cycles.toFixed(1):0} cycles)`,
+     d:['Nothing repeats reliably. Rule out every seasonal model.',
+        'Some repeat, weakly. A seasonal term is defensible but won\'t win.',
+        'A clear, stable cycle. Seasonal modelling is the whole game here.',
+        'Very strong, stable seasonal component. This dominates model choice.'][P.seasonalVerdict==='none'?0:P.seasonalVerdict==='weak'?1:P.seasonalVerdict==='moderate'?2:3],bar:bar(P.FS1,'#a78bfa')},
+    {v:P.ms[1]?('m='+P.ms[1]):'—',c:P.second?'#f472b6':'#5d6577',
+     t:`Second seasonality${P.second?' — <b>detected</b>':' — none found'}`,
+     d:P.second?'Two cycles are real. Single-period models will bias one of them. Reach for decomposition or a Fourier-term model.':'No second period survives the strength test. One seasonal component is enough.',bar:bar(P.second?P.second.FS:0,'#f472b6')},
+    {v:P.FT.toFixed(2),c:P.FT>0.5?'#fbbf24':'#5d6577',
+     t:`Trend strength — <b>${P.trendVerdict}</b>`,
+     d:clamp(['No trend term needed; fitting one captures noise.','Some trend; include it but check it survives out-of-sample.','Trend is a first-class component. Damped extrapolation is worth testing.'][['none','moderate','strong'].indexOf(P.trendVerdict)],0,2),bar:bar(P.FT,'#fbbf24')},
+    {v:P.type,c:P.type==='mul'?'#fbbf24':'#60a5fa',
+     t:`Seasonal flavour — <b>${P.type==='mul'?'multiplicative':'additive'}</b>`,
+     d:`Multiplicative seasonal strength ${P.mulFS.toFixed(2)} vs additive ${P.FS1.toFixed(2)}. If ${P.type==='mul'}, the swing scales with the level — model it multiplicatively, or take logs first.`,bar:bar(P.type==='mul'?P.mulFS:P.FS1,P.type==='mul'?'#fbbf24':'#60a5fa')},
+    {v:(P.adf.stat>0?P.adf.stat.toFixed(2):'—'),c:P.adf.stationary?'#4ade80':'#f87171',
+     t:`Stationarity (ADF with trend) — <b>${P.adf.stationary?'stationary':'non-stationary'}</b>`,
+     d:`t=${P.adf.stat.toFixed(2)} vs critical ${P.adf.crit?P.adf.crit.toFixed(2):'\u22122.86'}. ${P.adf.stationary?'The unit root is rejected.':'The unit root is not rejected.'} Read this as an instruction about <i>differencing</i>, not as a verdict on the data — and treat it as a hint, since ADF is unreliable on short or strongly trending series. The random-walk call above deliberately does not depend on it.`,bar:bar(clamp((P.adf.stat+4)/4,0,1),P.adf.stationary?'#4ade80':'#f87171')},
+    {v:P.zeroFrac>0.05?(P.zeroFrac*100).toFixed(0)+'%':'0%',c:P.zeroFrac>0.2?'#f87171':'#5d6577',
+     t:`Intermittency — ${P.zeroFrac>0.2?'<b>intermittent</b>':'continuous'}`,
+     d:P.zeroFrac>0.2?'Enough zero periods that a level-plus-seasonality model is structurally wrong. Croston-family methods are the starting point, not the fallback.':'No mass at zero; continuous models remain valid.',bar:bar(P.zeroFrac,'#f87171')},
+    {v:GEN.exog>0.05?(P.exogCorr*100).toFixed(0)+'%':'—',c:GEN.exog>0.05?'#f472b6':'#5d6577',
+     t:`Exogenous driver correlation — ${GEN.exog>0.05?'<b>available</b>':'none supplied'}`,
+     d:GEN.exog>0.05?`|corr(y,x)| = ${P.exogCorr.toFixed(2)}. A driver this strong means a univariate model is leaving information on the table — <b>but only if you can forecast the driver too</b>.`:'No drivers passed. Everything below is univariate by necessity.',bar:bar(P.exogCorr,'#f472b6')},
+    {v:P.randomWalk?'YES':(P.pureNoise?'no':'no'),c:P.randomWalk?'#fbbf24':P.pureNoise?'#60a5fa':'#4ade80',
+     t:`Increment structure \u2014 <b>${P.randomWalk?'random walk':P.pureNoise?'iid noise (no memory)':'structured'}</b>`,
+     d:P.randomWalk?`Level autocorrelation ${P.acf1.toFixed(2)} but differenced autocorrelation ${P.rwAcf1.toFixed(2)}: the increments carry no information, so the series is a random walk. The honest forecast is today\u2019s value.`:P.pureNoise?'The level itself has no memory either: successive values are unrelated, so the best forecast is the long-run mean rather than the last value.':`Differenced autocorrelation ${P.rwAcf1.toFixed(2)} \u2014 real dynamics survive differencing, so there is something left to model.`,
+     bar:bar(P.randomWalk?1:P.pureNoise?0.4:0.7,P.randomWalk?'#fbbf24':P.pureNoise?'#60a5fa':'#4ade80')}
+  ];
+  $('#sigCard').innerHTML='<h3>Signals for the current series</h3>'+rows.map(r=>
+    `<div class="sig"><div class="v" style="color:${r.c}">${r.v}</div><div class="d"><b>${r.t}</b>${r.d}${r.bar}</div></div>`).join('');
+}
+
+function renderRecs(){
+  const R=recommend(PROF);
+  const top=R.list[0];
+  const alerts=[];
+  if(PROF.ms[0]&&PROF.cycles<4)alerts.push({t:'warn',h:`Only <b>${PROF.cycles.toFixed(1)} cycles</b> for m=${PROF.ms[0]}. Seasonal parameters are on the edge of identification (floor is 2, stability wants 4+). Consider resampling to a coarser grain first.`,p:'Resample before you model — the fix is almost always a coarser frequency, not a better algorithm.'});
+  if(PROF.reqCycles<4&&PROF.reqCycles<PROF.cycles+0.01)alerts.push({t:'warn',h:`The requested season <b>m=${PROF.reqM}</b> only fits <b>${PROF.reqCycles.toFixed(1)} cycles</b> in ${PROF.n} points, so it could not be tested.`,p:'Either resample to a coarser frequency, or accept that a seasonal term cannot be estimated at this grain.'});
+  else if(PROF.reqCycles<4&&PROF.m1&&PROF.m1!==PROF.reqM)alerts.push({t:'warn',h:`The requested season <b>m=${PROF.reqM}</b> only fits <b>${PROF.reqCycles.toFixed(1)} cycles</b>. Detection settled on m=${PROF.m1} instead.`,p:'Trust the detected period, but check whether you have the frequency you think you do.'});
+  if(PROF.ms.length>1)alerts.push({t:'warn',h:`<b>Two seasonal periods confirmed</b> (m=${PROF.ms[0]} and m=${PROF.ms[1]}). Plain Holt-Winters assumes a single period and is blocked below.`,p:'Use MSTL/TBATS, or a model with Fourier terms at both periods.'});
+  if(PROF.zeroFrac>0.2)alerts.push({t:'red',h:`<b>${(PROF.zeroFrac*100).toFixed(0)}% of periods are zero.</b> Every continuous family is penalised below. MAPE on this series will be meaningless.`,p:'Croston or TSB smoothing; or split into a demand-probability classifier and an expected-size model.'});
+  if(PROF.randomWalk)alerts.push({t:'warn',h:`<b>Near-random walk detected.</b> No model here will reliably beat "tomorrow equals today" — including the winner below.`,p:'Say so explicitly in the writeup. Simplicity here is a finding, not a failure.'});
+  if(GEN.exog>0.4&&PROF.exogCorr>0.4)alerts.push({t:'red',h:`<b>Strong exogenous driver.</b> The backtest below feeds <i>actual future driver values</i> in — that is oracle leakage and flatters every driver-using model.`,p:'Replace with a forecast of the driver to get an honest number. Ratings for regression/Prophet will drop.'});
+  if(PROF.n<60)alerts.push({t:'warn',h:`Only <b>${PROF.n}</b> observations. Everything here is low-confidence.`,p:'Get more history, or accept wide intervals and a simple model.'});
+  $('#alerts').innerHTML=alerts.map(a=>`<div class="alert ${a.t==='red'?'red':''}"><p>${a.h}</p><p class="sm">→ ${a.p}</p></div>`).join('');
+
+  const hwTrend=PROF.trendVerdict==='none'?'None':(PROF.FT>0.7?"'add', damped_trend=True":"'add'");
+  const hwSeas=PROF.type==='mul'?"'mul'":"'add'";
+  const useRegressors=(key)=>(key==='prophet'||key==='regress'||key==='gbm')&&GEN.exog>0.05;
+  $('#recs').innerHTML=R.list.map((r,i)=>{
+    const cfg={
+      hw:`ExponentialSmoothing(trend=${hwTrend}, seasonal=${hwSeas}, seasonal_periods=${PROF.m1})`,
+      holt:`Holt(damped_trend=${PROF.FT>0.5?true:false})`,
+      ses:`SimpleExpSmoothing(initialization_method='estimated')`,
+      arima:PROF.ms[0]?`SARIMAX(order=(p,d,q), seasonal_order=(P,D,Q,${PROF.m1})) \u2014 p,q auto-searched`:`ARIMA(order=(p,d,q)) \u2014 p,q auto-searched`,
+      snaive:`y[t+h] = y[t+h\u2212${PROF.m1||'m'}]`,
+      regress:`OLS(y ~ lags of x) + ExponentialSmoothing(residuals) \u2014 x forecast, not actual`,
+      prophet:`Prophet(weekly=${PROF.ms[0]===7||PROF.ms[0]===5}, changepoint_prior_scale=0.05)`+(GEN.exog>0.05?' + add_regressor(x)':''),
+      mstl:`MSTL(periods=[${PROF.ms.join(', ')}]) \u2192 forecast each \u2192 aggregate`,
+      gbm:`direct multi-horizon regressor, lags + calendar + x`,
+      naive:`y[t+h] = y[t]`
+    }[r.key]||'';
+    return `<div class="rec ${i===0&&!r.blocked?'top':''} ${r.blocked?'blocked':''}">
+      <div class="hdr"><span class="rank">#${i+1}</span><h3>${r.name}</h3><span class="chip n">${r.fam}</span>
+      <span class="score">score <b>${r.score.toFixed(0)}</b>${r.blocked?' · <span style="color:var(--red)">blocked</span>':''}</span></div>
+      ${r.blocked?`<div class="sm" style="color:var(--red);margin-top:8px">✕ ${r.blocked}</div>`:
+      `<ul>${r.reasons.map(x=>`<li>${x}</li>`).join('')}</ul>
+       ${i<3?`<div class="cfg">${cfg}</div>`:''}`}
+    </div>`;
+  }).join('');
+}
+
+function btContext(){
+  return {
+    m:PROF.m1||Math.max(2,Math.round(GEN.m)), type:PROF.type, ms:PROF.ms,
+    train:(a,b)=>({m:PROF.m1||Math.max(2,Math.round(GEN.m)),type:PROF.type,ms:PROF.ms,
+      x:SER.x?SER.x.slice(0,a):null, xf:SER.x?SER.x.slice(a,b):null})
+  };
+}
+function renderBacktest(){
+  const y=SER.y,h=horizonDefault();
+  const bt=backtest(y,h,ORIGINS,btContext());
+  const keys=Object.keys(bt);
+  if(!keys.length){$('#btTable').innerHTML='<p class="sm mut">Not enough history for a backtest at this horizon.</p>';$('#chBt').innerHTML='';return}
+  const naiveRMSE=(bt.naive?bt.naive.rmse:null);
+  const sorted=keys.slice().sort((a,b)=>bt[a].rmse-bt[b].rmse);
+  const best=sorted[0];
+  const ties=bt[naiveRMSE===null?'':'naive']&&bt.naive.rmse<=1e-12;
+  $('#btTable').innerHTML=`<table><thead><tr>
+      <th>Model</th><th class="num">RMSE</th><th class="num">MAE</th><th class="num">MAPE</th><th class="num">vs naive</th><th class="num">errors</th></tr></thead><tbody>`+
+    sorted.map(k=>{
+      const r=bt[k],isB=k===best,isN=k==='naive';
+      // skill is undefined when the naive benchmark is itself exact (a constant series)
+      const vs=(isN||r.skill==null||!isFinite(r.skill))?'—':
+        `<span style="color:${r.skill>0?'var(--teal)':'var(--red)'}">${r.skill>0?'+':''}${(r.skill*100).toFixed(1)}%</span>`;
+      return `<tr class="${isB?'best':isN?'base':''}"><td>${MODELS[k].name}${isB?' ← best':''}${isN?' (baseline)':''}</td>
+        <td class="num">${fmt(r.rmse)}</td><td class="num">${fmt(r.mae)}</td>
+        <td class="num">${isFinite(r.mape)?r.mape.toFixed(1)+'%':'—'}</td><td class="num">${vs}</td><td class="num">${r.n}</td></tr>`;
+    }).join('')+'</tbody></table>';
+  const beats=Object.keys(bt).filter(k=>bt[k].skill!=null&&isFinite(bt[k].skill)&&bt[k].skill>0).length;
+  const ranked=Object.keys(bt).length-(bt.naive?1:0);
+  $('#btNote').innerHTML=`Rolling origins: ${Math.max(1,Math.round(bt[best].points.length/h))} × h=${h}. `+
+    (ties?'The naive forecast is exact on this series (a constant level), so skill scores are undefined. ':
+      `Against naive: ${beats} of ${ranked} models beat it. `)+
+    `The rule engine ranked <b>${recommend(PROF).list[0].name}</b> #1; the backtest picked <b>${MODELS[best].name}</b>. `+
+    `<span class="mut">Where those disagree, trust the backtest — but check whether the backtest was leaked first.</span>`;
+
+  // plot best model's last-origin forecast on a shared scale with the history
+  const cut=y.length-h,train=y.slice(0,cut),test=y.slice(cut);
+  const ctx={m:PROF.m1||Math.max(2,Math.round(GEN.m)),type:PROF.type,x:SER.x?SER.x.slice(0,cut):null,xf:SER.x?SER.x.slice(cut,cut+h):null};
+  let pred;
+  try{pred=MODELS[best].fn(train,h,ctx);}catch(e){pred=fNaive(train,h)}
+  if(!pred||pred.length<h)pred=fNaive(train,h);
+  const show=Math.max(60,Math.min(240,train.length));
+  const padTo=a=>new Array(show).fill(null).concat(a.slice(0,h));
+  const p=padTo(pred);
+  const d1=train.slice(-show).map((v,i,a)=>i?v-a[i-1]:0);
+  const sdIn=sd(d1)||sd(train)||1;
+  const bnd={lo:padTo(p.map((_,i)=>p[i]-1.96*sdIn*Math.sqrt(1+i*0.6))),
+             hi:padTo(p.map((_,i)=>p[i]+1.96*sdIn*Math.sqrt(1+i*0.6)))};
+  const hist=padTo(new Array(show).fill(null));
+  hist.splice(0,show,...train.slice(-show));
+  $('#chBt').innerHTML=`<div class="ttl"><span>Last origin · fit on ${cut} points → predict ${h}</span><em>${MODELS[best].name}</em></div>`+
+    meta(Math.min.apply(null,test),Math.max.apply(null,test))+
+    svgChart([
+      {data:[],band:bnd},
+      {data:hist,color:'#60a5fa',sw:1.5},
+      {data:p,color:'#fbbf24',sw:2}
+    ],{h:150,n:show+h})+
+    `<div class="fzone" style="left:${(show/(show+h)*100).toFixed(2)}%"></div>`;
+}
+
+/* ---- static content ---- */
+function buildFamilies(){
+  const F=[
+    ['naive','Baseline','y[t+h] = y[t]','Always','It looks trivially simple. It is the single hardest benchmark to beat, and the correct answer far more often than people admit.','Anything with structure, or any horizon where error compounds.'],
+    ['snaive','Baseline','y[t+h] = y[t−m+h]','One clear seasonal period','A seasonal series with roughly stable seasonal shape. The reference every seasonal model must beat.','Seasonal amplitude drifting over time; multiple periods.'],
+    ['ses','ETS','level only','No trend, no seasonality, level near-constant','Short series, noisy, you need a defensible number and interpretability. Fast and impossible to overfit.','Any trend or seasonal signal — it will average it away.'],
+    ['holt','ETS','level + (damped) trend','Trend, no seasonality','Growing or decaying series. Damping stops a fitted slope from running away over long horizons.','Strong curvature, seasonal cycles, regime changes.'],
+    ['hw','ETS','level + trend + seasonality','One seasonal period, stable shape','The default for seasonal business series. Transparent decomposition you can hand to an operator.','More than one period; seasonal amplitude ∝ level without seasonal=\'mul\'; very short history.'],
+    ['arima','ARIMA','(p,d,q) + (P,D,Q,m) autocorrelation structure','Differenced series shows genuine autocorrelation','You need a principled differencing order; you want intervals; residual diagnostics matter.','Very large seasonal m (expensive, unstable); strong exogenous structure (use SARIMAX instead).'],
+    ['regress','Dynamic regression','y = f(x) + model(residuals)','Strong, forecastable external drivers','Weather-driven demand, pricing, promotions. Beats univariate models when drivers are knowable ahead.','Drivers you cannot forecast — then it is leakage, not a model.'],
+    ['prophet','Structural','trend + changepoints + Fourier seasonality + holidays','Long history, holidays, promotions, changepoints, many series','Fast to configure, robust to missing data, interpretable components, easy to operate.','High-frequency short series; genuinely nonlinear dynamics; very short histories.'],
+    ['mstl','Decomposition','strip seasonals one at a time, forecast, re-add','Two or more seasonal periods','Daily + weekly, or weekly + yearly. Handles the multi-seasonality that breaks single-period models.','Longest period has too few cycles — check n/m before fitting.'],
+    ['gbm','ML','direct multi-horizon regression on features','Many series, many features, nonlinear effects','Panel forecasting at scale; lagged and calendar features; effects that are real but nonlinear.','Few hundred rows; small or single series — it will overfit and lose to ETS.'],
+    ['croston','Intermittent','separate level and size updates','Many zero periods with stochastic demand','Spare parts, slow-moving SKUs, ad-hoc service requests.','Zeros are true unavailability, not stockouts — then you need censoring-aware methods.']
+  ];
+  $('#fams').innerHTML=F.map(f=>`<div class="card fam" style="border-left-color:${f[0]==='croton'?'var(--pink)':'var(--bd2)'}">
+    <div class="tag">${f[1]}</div><h3 style="margin-top:3px">${f[0].toUpperCase()}</h3>
+    <div class="mono sm" style="color:var(--violet);margin:5px 0 11px">${f[2]}</div>
+    <p class="sm" style="margin-bottom:8px"><b style="color:var(--teal)">Use when</b> ${f[3]}</p>
+    <p class="sm" style="margin-bottom:8px"><b style="color:var(--amber)">Fails when</b> ${f[5]}</p>
+    <p class="sm mut" style="margin:0">${f[4]}</p></div>`).join('');
+}
+function buildQuiz(){
+  const Q=[
+    {q:'Monthly retail units, n=180, m=12. Level grows steadily; July peaks are wider every year. No external drivers.',
+     a:'<b>Holt-Winters with <code>trend=\'add\', seasonal=\'mul\'</code></b>, benchmarked against seasonal naive.',
+     w:'One seasonal period, so no decomposition method needed. Amplitude grows with level — that is the definition of multiplicative seasonality, and forcing additive would systematically under-predict peaks and over-predict troughs. Trend is close to linear, so additive trend. Seasonal naive is included because if the seasonal shape is that stable, it is genuinely hard to beat. If you also had weather or promo data, a dynamic regression variant would move up the list.'},
+    {q:'GOOGL daily highs, one year of business days. Requested <code>yearly_seasonality=True</code>, and the write-up headline metric is MAPE.',
+     a:'<b>Naive / ARIMA(0,1,0)</b> — plus two errors to fix in the setup itself.',
+     w:'The differenced series has almost no autocorrelation left, so there is no exploitable structure; the honest forecast is today\'s price. Two setup errors ride along: (1) yearly seasonality cannot be learned from 12 months — you have under two cycles, so that parameter is unidentified; (2) MAPE divides by price, so it mostly measures price level rather than error. Report MAE or MASE, and treat the naive result as the finding.'},
+    {q:'10-minute power consumption, 2,000 rows. Plan: <code>seasonal_periods=144</code> and SARIMAX <code>(1,1,1)(1,0,1,144)</code> with 5 weather regressors using actual test-period weather.',
+     a:'<b>Resample to hourly first, then a dynamic regression (SARIMAX + exog)</b> with future weather replaced by a weather forecast.',
+     w:'2,000 / 144 = <b>14 cycles</b> — just above the identifiability floor, so the seasonal term is barely stable and the seasonal ARIMA will be slow to converge and hard to trust. At hourly grain m=24 gives ~83 cycles, which is comfortable; add m=168 for the weekly cycle as a second seasonal component. Separately, feeding actual future weather is oracle leakage: it answers "what if I knew tomorrow exactly?" Fix the grain, fix the leakage, and the drivers become a real strength rather than an illusion.'},
+    {q:'Spare-parts demand, weekly, 200 weeks, 55% zero periods. Considering ARIMA with exogenous demand drivers.',
+     a:'<b>Croston / TSB smoothing</b> — not ARIMA.',
+     w:'With more than half the periods at zero, a level-plus-seasonality model is structurally wrong, not merely suboptimal: it will predict small negative-to-positive wobbles where the truth is a Bernoulli "no demand" plus a size when demand occurs. Croston separates the level from the demand size and updates them only on non-zero periods, which matches the mechanism. Two things to check before trusting it: whether the zeros are genuine no-demand or stockouts (censoring needs different handling), and which metrics you report — MAPE is meaningless here, so use MAE or cumulative-bias measures.'}
+  ];
+  $('#quizBox').innerHTML=Q.map((q,i)=>`<div class="q">
+    <div class="qtxt"><b style="color:var(--teal)">Q${i+1}.</b> ${q.q}</div>
+    <div class="btnrow"><button class="btn ghost sm" data-q="${i}">Reveal</button>
+    <button class="btn sm" data-load="${i}">Load into the Lab</button></div>
+    <div class="ans" id="qa-${i}"><p style="margin:0 0 8px">${q.a}</p><p class="sm" style="margin:0">${q.w}</p></div>
+  </div>`).join('');
+  $$('#quizBox [data-q]').forEach(b=>b.addEventListener('click',()=>{
+    const el=$('#qa-'+b.dataset.q);el.classList.toggle('show');
+    b.textContent=el.classList.contains('show')?'Hide':'Reveal';
+  }));
+  const LOAD=['air','stock','power','inter'];
+  $$('#quizBox [data-load]').forEach(b=>b.addEventListener('click',()=>applyScenario(LOAD[b.dataset.load])));
+}
+
+/* ---- boot ---- */
+buildScenarios();buildKnobs();buildFamilies();buildQuiz();
+$('#btnShuffle').addEventListener('click',()=>{SEED=(SEED*1664525+1013904223)>>>0;regen()});
+$('#btnRand').addEventListener('click',()=>{
+  const r=mulberry32((SEED=Math.floor(Math.random()*1e9))>>>0);
+  GEN.n=[80,140,250,500,900,1400][Math.floor(r()*6)];
+  GEN.m=[4,7,12,24,52,168][Math.floor(r()*6)];
+  GEN.m2=[0,24,52,168,365][Math.floor(r()*5)];
+  GEN.trend=(r()*2-1)*.9;GEN.curve=(r()*2-1)*.7;
+  GEN.seas=['none','add','mul'][Math.floor(r()*3)];
+  GEN.seasAmp=GEN.seas==='none'?0:r()*.6;GEN.seasAmp2=r()<.35?r()*.35:0;
+  GEN.noise=r()*.4;GEN.outl=r()<.5?r()*.8:0;GEN.cp=r()<.5?Math.floor(r()*3):0;
+  GEN.rw=r()<.25?1:0;
+  GEN.inter=r()<.2?r()*.7:0;GEN.exog=r()<.5?r()*.9:0;
+  CUR_SCEN=null;syncKnobs();markScen();regen();
+});
+$('#btnRecompute').addEventListener('click',()=>regen());
+$$('#segOrigins button').forEach(b=>b.addEventListener('click',()=>{
+  $$('#segOrigins button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  ORIGINS=parseInt(b.dataset.v);renderBacktest();
+}));
+$$('#segH button').forEach(b=>b.addEventListener('click',()=>{
+  $$('#segH button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  HFIX=b.dataset.v==='0'?0:parseInt(b.dataset.v);renderMain();renderBacktest();
+}));
+const ids=['thesis','lab','anatomy','signals','families','engine','backtest','gotchas','quiz','next'];
+const secs=ids.map(i=>document.getElementById(i)).filter(Boolean);
+function spy(){
+  let cur=secs[0];
+  for(const s of secs){if(s.getBoundingClientRect().top<=110)cur=s}
+  $$('nav a.navlink').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur.id));
+}
+window.addEventListener('scroll',spy,{passive:true});
+applyScenario('air');
+spy();
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+# ---------------------------------------------------------------------------
+# The app itself is a single dependency-free HTML file: no build, no node_modules.
+# This file only covers editor / OS / tooling cruft.
+# ---------------------------------------------------------------------------
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.\#*
+\#*\#
+
+# Node - only needed to run the optional test scripts, never for the app
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Python - for the planned starter kit
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local scratch and artefacts
+tmp/
+scratch/
+out/
+outputs/
+reports/
+*.log
+*.tmp
+*.bak

@@ -1,0 +1,12 @@
+const fs = require('fs');
+const t = fs.readFileSync(__dirname + '/index.html', 'utf8');
+const ext = [...t.matchAll(/(src|href)\s*=\s*["']([^"']+)["']/g)].map(m => m[2]);
+console.log('external refs: ' + (ext.length ? JSON.stringify(ext) : 'NONE (fully self-contained)'));
+console.log('<script> tags: ' + (t.match(/<script/g) || []).length + '   <link> tags: ' + (t.match(/<link/g) || []).length);
+console.log('size: ' + (t.length / 1024).toFixed(1) + ' KB, lines: ' + t.split(/\r?\n/).length);
+const ids = [...t.matchAll(/id="([^"]+)"/g)].map(m => m[1]);
+const dup = ids.filter((v, i) => ids.indexOf(v) !== i);
+console.log('duplicate element ids: ' + (dup.length ? JSON.stringify([...new Set(dup)]) : 'none'));
+const refs = [...t.matchAll(/\$\('#([A-Za-z0-9_-]+)'\)/g)].map(m => m[1]);
+const missing = [...new Set(refs)].filter(r => !ids.includes(r));
+console.log('querySelector ids not present in markup: ' + (missing.length ? JSON.stringify(missing) : 'none'));
